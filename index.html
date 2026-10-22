@@ -1,1471 +1,361 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>工地門禁卡／磁扣借還管理系統</title>
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>保險客戶 CRM 雛形</title>
 <style>
-:root{
-  --navy-950:#0f1b2d;
-  --navy-900:#132538;
-  --navy-800:#1a3049;
-  --navy-700:#234064;
-  --steel-600:#3d5a80;
-  --steel-400:#6c8bad;
-  --paper:#f4f6f8;
-  --paper-2:#ffffff;
-  --line:#dde3ea;
-  --ink:#1c2733;
-  --ink-dim:#5b6b7c;
-  --amber:#c8862a;
-  --amber-bg:#fdf1de;
-  --green:#2f8f5b;
-  --green-bg:#e6f5ec;
-  --red:#c23b3b;
-  --red-bg:#fbe9e9;
-  --grey:#6b7684;
-  --grey-bg:#eceff2;
-  --yellow:#a67c00;
-  --yellow-bg:#fdf3d9;
-  --radius:8px;
-  --shadow:0 1px 2px rgba(15,27,45,.06), 0 1px 6px rgba(15,27,45,.05);
-  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",Helvetica,Arial,sans-serif;
-}
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
-body{
-  font-family:var(--font);
-  background:var(--paper);
-  color:var(--ink);
-  font-size:15px;
-  line-height:1.5;
-  -webkit-font-smoothing:antialiased;
-}
-button{font-family:inherit;cursor:pointer;}
-input,select,textarea{font-family:inherit;font-size:15px;}
-
-/* ---------- Layout shell ---------- */
-#app{display:flex;min-height:100vh;}
-
-.sidebar{
-  width:220px;
-  flex-shrink:0;
-  background:var(--navy-950);
-  color:#c7d3e0;
-  display:flex;
-  flex-direction:column;
-  position:fixed;
-  top:0;left:0;bottom:0;
-  z-index:50;
-  transition:transform .25s ease;
-}
-.sidebar-header{
-  padding:20px 18px 14px;
-  border-bottom:1px solid rgba(255,255,255,.08);
-}
-.sidebar-header .site-name{font-size:15px;font-weight:700;color:#fff;line-height:1.35;}
-.sidebar-header .proj-name{font-size:12px;color:var(--steel-400);margin-top:3px;}
-.nav-list{list-style:none;margin:0;padding:10px 0;flex:1;overflow-y:auto;}
-.nav-item{
-  display:flex;align-items:center;gap:10px;
-  padding:11px 18px;
-  font-size:14px;
-  color:#aebdd0;
-  cursor:pointer;
-  border-left:3px solid transparent;
-  white-space:nowrap;
-}
-.nav-item .ic{width:18px;text-align:center;font-size:15px;}
-.nav-item:hover{background:rgba(255,255,255,.04);color:#fff;}
-.nav-item.active{
-  background:var(--navy-800);
-  color:#fff;
-  border-left-color:var(--amber);
-  font-weight:600;
-}
-.sidebar-foot{padding:12px 18px;font-size:11px;color:#5c6c80;border-top:1px solid rgba(255,255,255,.08);}
-
-.main{
-  margin-left:220px;
-  flex:1;
-  min-width:0;
-  display:flex;
-  flex-direction:column;
-}
-.topbar{
-  background:var(--paper-2);
-  border-bottom:1px solid var(--line);
-  padding:14px 24px;
-  display:flex;
-  align-items:center;
-  gap:14px;
-  position:sticky;top:0;z-index:30;
-}
-.topbar h1{font-size:18px;margin:0;font-weight:700;color:var(--navy-950);}
-.menu-toggle{
-  display:none;
-  background:none;border:none;font-size:20px;color:var(--navy-950);padding:4px 6px;
-}
-.topbar-search{
-  margin-left:auto;
-  display:flex;align-items:center;gap:8px;
-  background:var(--paper);
-  border:1px solid var(--line);
-  border-radius:999px;
-  padding:7px 14px;
-  min-width:240px;
-}
-.topbar-search input{border:none;background:transparent;outline:none;flex:1;font-size:14px;}
-.content{padding:20px 24px 60px;max-width:1400px;}
-
-/* ---------- Cards / generic ---------- */
-.panel{
-  background:var(--paper-2);
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-}
-.panel-head{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:16px 18px;border-bottom:1px solid var(--line);
-  flex-wrap:wrap;gap:10px;
-}
-.panel-head h2{font-size:16px;margin:0;font-weight:700;}
-.panel-body{padding:18px;}
-
-.stat-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-  gap:14px;
-  margin-bottom:22px;
-}
-.stat-card{
-  background:var(--paper-2);
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  padding:16px 16px 14px;
-  box-shadow:var(--shadow);
-  position:relative;
-  overflow:hidden;
-}
-.stat-card .num{font-size:28px;font-weight:800;color:var(--navy-950);line-height:1.1;}
-.stat-card .lbl{font-size:12.5px;color:var(--ink-dim);margin-top:6px;}
-.stat-card .bar{position:absolute;left:0;top:0;bottom:0;width:4px;}
-.stat-card.s-total .bar{background:var(--steel-600);}
-.stat-card.s-avail .bar{background:var(--green);}
-.stat-card.s-out .bar{background:var(--amber);}
-.stat-card.s-overdue .bar{background:var(--red);}
-.stat-card.s-in .bar{background:var(--steel-400);}
-.stat-card.s-outn .bar{background:var(--yellow);}
-
-.btn{
-  border:1px solid var(--line);
-  background:var(--paper-2);
-  color:var(--ink);
-  padding:9px 16px;
-  border-radius:6px;
-  font-size:14px;
-  font-weight:600;
-  display:inline-flex;align-items:center;gap:6px;
-  transition:background .12s, border-color .12s;
-}
-.btn:hover{background:var(--paper);}
-.btn-primary{background:var(--navy-900);border-color:var(--navy-900);color:#fff;}
-.btn-primary:hover{background:var(--navy-800);}
-.btn-amber{background:var(--amber);border-color:var(--amber);color:#fff;}
-.btn-amber:hover{filter:brightness(1.06);}
-.btn-red{background:var(--red);border-color:var(--red);color:#fff;}
-.btn-red:hover{filter:brightness(1.08);}
-.btn-green{background:var(--green);border-color:var(--green);color:#fff;}
-.btn-sm{padding:6px 11px;font-size:13px;border-radius:5px;}
-.btn:disabled{opacity:.45;cursor:not-allowed;}
-.btn-icon{padding:7px 9px;}
-
-.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px;}
-.toolbar input[type=text], .toolbar select, .toolbar input[type=date]{
-  border:1px solid var(--line);border-radius:6px;padding:8px 11px;background:#fff;font-size:14px;min-width:120px;
-}
-.toolbar .grow{flex:1;min-width:180px;}
-
-table{width:100%;border-collapse:collapse;font-size:13.5px;}
-thead th{
-  text-align:left;background:var(--paper);color:var(--ink-dim);
-  font-weight:700;font-size:12.5px;
-  padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;
-}
-tbody td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle;}
-tbody tr:hover{background:#fafbfc;}
-.table-wrap{overflow-x:auto;}
-.empty-row td{text-align:center;color:var(--ink-dim);padding:36px 12px;}
-
-.badge{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;
-}
-.badge .dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
-.badge-avail{background:var(--green-bg);color:var(--green);}
-.badge-avail .dot{background:var(--green);}
-.badge-out{background:var(--amber-bg);color:var(--amber);}
-.badge-out .dot{background:var(--amber);}
-.badge-overdue{background:var(--red-bg);color:var(--red);}
-.badge-overdue .dot{background:var(--red);}
-.badge-disabled{background:var(--grey-bg);color:var(--grey);}
-.badge-disabled .dot{background:var(--grey);}
-.badge-lost{background:var(--red-bg);color:var(--red);}
-.badge-lost .dot{background:var(--red);}
-.badge-broken{background:var(--yellow-bg);color:var(--yellow);}
-.badge-broken .dot{background:var(--yellow);}
-
-/* ---------- Modal ---------- */
-.overlay{
-  position:fixed;inset:0;background:rgba(15,27,45,.45);
-  display:none;align-items:flex-start;justify-content:center;
-  padding:40px 16px;overflow-y:auto;z-index:100;
-}
-.overlay.show{display:flex;}
-.modal{
-  background:#fff;border-radius:10px;max-width:560px;width:100%;
-  box-shadow:0 12px 40px rgba(0,0,0,.25);
-  animation:pop .15s ease;
-}
-@keyframes pop{from{transform:translateY(6px);opacity:0;}to{transform:translateY(0);opacity:1;}}
-.modal-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
-.modal-head h3{margin:0;font-size:16px;}
-.modal-close{background:none;border:none;font-size:20px;color:var(--ink-dim);padding:2px 6px;}
-.modal-body{padding:20px;max-height:70vh;overflow-y:auto;}
-.modal-foot{padding:16px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;}
-
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.form-grid.one{grid-template-columns:1fr;}
-.field{display:flex;flex-direction:column;gap:5px;}
-.field.full{grid-column:1/-1;}
-.field label{font-size:12.5px;font-weight:700;color:var(--ink-dim);}
-.field input,.field select,.field textarea{
-  border:1px solid var(--line);border-radius:6px;padding:9px 11px;font-size:14px;background:#fff;
-}
-.field textarea{resize:vertical;min-height:60px;}
-.help{font-size:11.5px;color:var(--ink-dim);}
-.checkbox-list{display:flex;flex-wrap:wrap;gap:8px;max-height:180px;overflow-y:auto;border:1px solid var(--line);border-radius:6px;padding:10px;}
-.checkbox-list label{display:flex;align-items:center;gap:6px;font-size:13px;padding:4px 8px;border-radius:5px;background:var(--paper);cursor:pointer;}
-.checkbox-list label:has(input:checked){background:var(--amber-bg);}
-
-.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px;}
-.toast{
-  background:var(--navy-950);color:#fff;padding:12px 18px;border-radius:8px;font-size:13.5px;
-  box-shadow:0 6px 20px rgba(0,0,0,.25);min-width:220px;animation:slidein .2s ease;
-}
-.toast.err{background:var(--red);}
-.toast.ok{background:var(--green);}
-@keyframes slidein{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
-
-.section-note{font-size:13px;color:var(--ink-dim);margin-bottom:14px;}
-.pill-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
-.pill-tab{
-  padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;color:var(--ink-dim);
-}
-.pill-tab.active{background:var(--navy-900);color:#fff;border-color:var(--navy-900);}
-
-.overdue-banner{
-  background:var(--red-bg);border:1px solid #f1c3c3;color:var(--red);
-  padding:10px 14px;border-radius:8px;font-size:13.5px;font-weight:600;margin-bottom:14px;
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-}
-
-.kv-grid{display:grid;grid-template-columns:120px 1fr;gap:8px 12px;font-size:14px;}
-.kv-grid dt{color:var(--ink-dim);}
-.kv-grid dd{margin:0;font-weight:600;}
-
-.stat-report{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:18px;}
-@media (max-width:900px){.stat-report{grid-template-columns:1fr;}}
-.report-block h3{font-size:14px;margin:0 0 10px;}
-.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13px;}
-.bar-row .name{width:110px;flex-shrink:0;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.bar-row .track{flex:1;background:var(--paper);border-radius:4px;height:10px;overflow:hidden;}
-.bar-row .fill{height:100%;background:var(--steel-600);border-radius:4px;}
-.bar-row .val{width:34px;text-align:right;font-weight:700;flex-shrink:0;}
-
-@media (max-width:860px){
-  .sidebar{transform:translateX(-100%);}
-  .sidebar.open{transform:translateX(0);}
-  .main{margin-left:0;}
-  .menu-toggle{display:inline-flex;}
-  .form-grid{grid-template-columns:1fr;}
-  .topbar-search{min-width:0;flex:1;}
-  .topbar h1{font-size:16px;}
-}
-.overlay-bg-close{cursor:pointer;}
-
-@media print{
-  .sidebar,.topbar,.toolbar,.no-print,.overlay{display:none !important;}
-  .main{margin-left:0;}
-  body{background:#fff;}
-  .panel{box-shadow:none;border:none;}
-  .content{padding:0;}
-}
-</style>
-</head>
-<body>
-<div id="app">
-
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="site-name" id="cfgSiteName">○○建案</div>
-      <div class="proj-name" id="cfgProjName">○○新建工程・驗屋階段</div>
-    </div>
-    <ul class="nav-list" id="navList">
-      <li class="nav-item" data-page="dashboard"><span class="ic">🏠</span>儀表板</li>
-      <li class="nav-item" data-page="equipment"><span class="ic">🔑</span>門禁設備</li>
-      <li class="nav-item" data-page="areas"><span class="ic">📍</span>門禁區域</li>
-      <li class="nav-item" data-page="borrow"><span class="ic">📝</span>新增借用</li>
-      <li class="nav-item" data-page="current"><span class="ic">📤</span>目前借出</li>
-      <li class="nav-item" data-page="history"><span class="ic">📋</span>借還紀錄</li>
-      <li class="nav-item" data-page="vendors"><span class="ic">🏢</span>廠商管理</li>
-      <li class="nav-item" data-page="reports"><span class="ic">📊</span>統計報表</li>
-      <li class="nav-item" data-page="settings"><span class="ic">⚙️</span>系統設定</li>
-    </ul>
-    <div class="sidebar-foot">門禁磁扣借還管理系統 v1.0</div>
-  </aside>
-
-  <div class="main">
-    <div class="topbar">
-      <button class="menu-toggle" id="menuToggle">☰</button>
-      <h1 id="pageTitle">儀表板</h1>
-      <div class="topbar-search">
-        <span>🔍</span>
-        <input type="text" id="globalSearch" placeholder="搜尋設備編號、樓層、廠商、借用人…">
-      </div>
-    </div>
-    <div class="content" id="content"></div>
-  </div>
-</div>
-
-<div class="overlay" id="overlay">
-  <div class="modal" id="modalBox"></div>
-</div>
-
-<div class="toast-wrap" id="toastWrap"></div>
-
+:root{--bg:#f1e8dc;--card:#fbf6ef;--tx:#3b2e25;--mu:#7a6757;--ac:#8b5e3c;--ac2:#e8d8c4;--bd:#dccbb6;--wr:#9a5b12;--wr2:#f6e3c2;--dn:#b3261e;--dn2:#f8dcd6;--ok:#1d6b45;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#231b15;--card:#2f251d;--tx:#f0e6da;--mu:#bfae9c;--ac:#d9ad7f;--ac2:#43352a;--bd:#4a3b2f;--wr:#f0b45c;--wr2:#44331c;--dn:#f19a93;--dn2:#45231f;--ok:#7fd0a1;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#231b15;--card:#2f251d;--tx:#f0e6da;--mu:#bfae9c;--ac:#d9ad7f;--ac2:#43352a;--bd:#4a3b2f;--wr:#f0b45c;--wr2:#44331c;--dn:#f19a93;--dn2:#45231f;--ok:#7fd0a1;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.6 "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:17px;margin:20px 0 8px}
+.note{background:var(--wr2);color:var(--wr);border-radius:10px;padding:10px 12px;font-size:14px;margin:8px 0 16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin:8px 0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mu{color:var(--mu);font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat b{display:block;font-size:26px;line-height:1.2}
+.strip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:8px 0}
+.strip div{background:var(--ac2);border-radius:8px;text-align:center;padding:8px 0;font-size:12px;color:var(--mu)}
+.strip div b{display:block;font-size:18px;color:var(--tx)}
+.strip div.hot{background:var(--wr2)}.strip div.hot b{color:var(--wr)}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;background:var(--ac2);color:var(--ac)}
+.tag.w{background:var(--wr2);color:var(--wr)}.tag.d{background:var(--dn2);color:var(--dn)}
+button,input,select,textarea{font:inherit;color:var(--tx)}
+button{border:1px solid var(--bd);background:var(--card);border-radius:10px;padding:8px 14px;min-height:44px;cursor:pointer}
+button.pri{background:var(--ac);color:var(--card);border-color:var(--ac)}
+button.sm{min-height:36px;padding:4px 10px;font-size:14px}
+button.dg{color:var(--dn)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+label{display:block;font-size:14px;color:var(--mu);margin:10px 0 2px}
+input,select,textarea{width:100%;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;min-height:44px}
+.err{color:var(--dn);font-size:14px;margin-top:8px;min-height:20px}
+nav{overflow-x:auto;position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1 0 auto;min-width:56px;padding:0 6px;border:0;border-radius:0;background:none;color:var(--mu);min-height:56px;font-size:14px}
+nav button.on{color:var(--ac);font-weight:700;box-shadow:inset 0 3px 0 var(--ac)}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:5}
+#sheet.open{display:flex}
+#sheet>div{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--tx);color:var(--bg);padding:8px 16px;border-radius:99px;font-size:14px;display:none;z-index:9}
+.empty{text-align:center;color:var(--mu);padding:28px 8px}
+</style><script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script></head><body>
+<main id="app"></main>
+<div id="sheet"><div id="sheetBody"></div></div>
+<div id="toast"></div>
+<nav id="nav"></nav>
 <script>
-(function(){
-"use strict";
+let TYPES=["車險","火險","旅平險","醫療險","其他險種"];
+try{const r=localStorage.getItem("crm_proto_types");if(r){const a=JSON.parse(r);if(Array.isArray(a))TYPES=a}}catch(e){}
+const STATUS=["草稿","待生效","有效","續保洽談中","已續保","已到期","已取消","不續保"];
+const LIVE=["有效","續保洽談中"];
+const STEPS=[90,60,30,14,7,3,1];
+let S={c:[],p:[]},tab="home",armed=null;
+try{const r=localStorage.getItem("crm_proto_v1");if(r)S=JSON.parse(r)}catch(e){}
+S.h=S.h||[];S.r=S.r||[];S.l=S.l||[];S.o=S.o||[];S.y=S.y||[];S.k=S.k||[];S.a=S.a||[];S.b=S.b||[];
+function save(){try{localStorage.setItem("crm_proto_v1",JSON.stringify(S))}catch(e){toast("無法儲存到瀏覽器，資料將在關閉後消失")}}
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const fd=d=>d?d.replaceAll("-","/"):"";
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const T0=()=>{const t=new Date();t.setHours(0,0,0,0);return t};
+const dl=d=>Math.round((new Date(d+"T00:00:00")-T0())/864e5);
+function bday(b){const[,m,d]=b.split("-").map(Number),y=T0().getFullYear();
+ const mk=y=>{let x=new Date(y,m-1,d);if(m==2&&d==29&&x.getMonth()!=1)x=new Date(y,1,28);return x};
+ let n=mk(y);if(n<T0())n=mk(y+1);return Math.round((n-T0())/864e5)}
+const mask=id=>id?id.slice(0,3)+"＊＊＊＊"+id.slice(-3):"";
+const cn=id=>(S.c.find(c=>c.id===id)||{}).name||"（已刪除客戶）";
+function toast(t){const e=document.getElementById("toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",2200)}
+function step(n){return STEPS.slice().reverse().find(s=>n<=s)}
+function due(){return S.p.filter(p=>LIVE.includes(p.status)&&p.end).map(p=>({p,n:dl(p.end)})).filter(x=>x.n<=90).sort((a,b)=>a.n-b.n)}
+function bds(){return S.c.filter(c=>c.birth).map(c=>({c,n:bday(c.birth)})).filter(x=>x.n<=30).sort((a,b)=>a.n-b.n)}
+function dayTag(n){return n<0?`<span class="tag d">已逾期 ${-n} 天</span>`:n===0?`<span class="tag d">今天到期</span>`:`<span class="tag ${n<=30?"w":""}">剩 ${n} 天</span>`}
 
-/* ===================== 資料層 ===================== */
-const DB_KEY = "accessCardSystem_v1";
-const uid = ()=> 'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
+function home(){
+ const d=due(),b=bds(),cnt=s=>d.filter(x=>x.n>=0&&x.n<=s).length;
+ const strip=STEPS.slice().reverse().map((s,i,a)=>{const lo=i?a[i-1]:-1,k=d.filter(x=>x.n>lo&&x.n<=s).length;return `<div class="${s<=30&&k?"hot":""}"><b>${k}</b>${s} 天</div>`}).join("");
+ return `<h1>首頁</h1><div class="mu">${fd(new Date().toLocaleDateString("sv"))}</div>
+ <div class="note">這是畫面雛形。資料只存在這支手機的瀏覽器，不會上傳。請勿輸入真實客戶資料。</div>
+ <div class="grid"><div class="card stat"><b>${S.c.length}</b>客戶總數</div><div class="card stat"><b>${S.p.filter(p=>p.status==="有效").length}</b>有效保單</div>
+ <div class="card stat"><b>${cnt(30)}</b>30 天內到期</div><div class="card stat"><b>${cnt(90)}</b>90 天內到期</div><div class="card stat"><b>${S.h.length}</b>家庭群組</div><div class="card stat"><b>${b.length}</b>30 天內生日</div><div class="card stat"><b>${todoC().length}</b>待聯絡客戶</div><div class="card stat"><b>${S.l.length}</b>聯絡紀錄</div><div class="card stat"><b>${S.o.filter(o=>OPENS(o.stage)).length}</b>進行中機會</div><div class="card stat"><b>${odO().length}</b>逾期業務機會</div></div>
+ <h2>到期時間軸</h2><div class="mu">依提醒天數分組，只計算有效與續保洽談中的保單</div><div class="strip">${strip}</div>
+ <h2>近期生日（30 天內）</h2>${b.length?b.map(x=>`<div class="card row"><span>${esc(x.c.name)}</span><span class="tag">${x.n===0?"今天":x.n+" 天後"}</span></div>`).join(""):`<div class="empty">30 天內沒有生日</div>`}${homeExtra()}`}
 
-function defaultDB(){
-  const areas = [];
-  for(let f=1; f<=21; f++){
-    const code = String(f).padStart(2,'0')+'F';
-    areas.push({id:uid(), code:code, name:code, type:'樓層', description:'第'+f+'層樓', active:true});
-  }
-  areas.push({id:uid(), code:'ENG', name:'全棟工程區', type:'工程', description:'可使用全棟21層之工程卡專屬區域', active:true});
+function custs(){return `<div class="row"><h1>客戶</h1><button class="pri" onclick="fc()">新增客戶</button></div>
+ <input id="q" placeholder="搜尋姓名、手機" oninput="drawList()" style="margin:8px 0"><div id="list"></div>`}
+function drawList(){const q=(document.getElementById("q")||{}).value||"",el=document.getElementById("list");if(!el)return;
+ const r=S.c.filter(c=>!q||c.name.includes(q)||(c.phone||"").includes(q));
+ el.innerHTML=r.length?r.map(c=>`<div class="card"><div class="row"><b>${esc(c.name)}</b><span class="tag">${c.hid?esc((S.h.find(h=>h.id===c.hid)||{}).name)+"　":""}${S.p.filter(p=>p.cid===c.id||(p.ins||[]).includes(c.id)).length} 張相關保單</span></div>
+ <div class="mu">${esc(mask(c.idno))} ${esc(c.phone||"")} ${c.birth?"生日 "+fd(c.birth):""}</div>${c.note?`<div class="mu">${esc(c.note)}</div>`:""}
+ <div style="margin-top:8px"><button class="sm" onclick="fl('','${c.id}')">記錄聯絡</button> <button class="sm" onclick="fc('${c.id}')">編輯</button> <button class="sm dg" onclick="del('c','${c.id}')">${armed==="c"+c.id?"再按一次刪除":"刪除"}</button></div></div>`).join(""):`<div class="empty">${S.c.length?"找不到符合的客戶":"還沒有客戶，先新增第一位"}</div>`}
 
-  const equipment = [];
-  areas.filter(a=>a.type==='樓層').forEach(area=>{
-    for(let m=1;m<=3;m++){
-      equipment.push({
-        id:uid(),
-        code: area.code+'-M0'+m,
-        type:'磁扣',
-        areaId: area.id,
-        usageScope: area.code,
-        status:'可借用',
-        note:'',
-        createdAt: new Date().toISOString()
-      });
-    }
-  });
-  const engArea = areas.find(a=>a.code==='ENG');
-  for(let i=1;i<=32;i++){
-    equipment.push({
-      id:uid(),
-      code:'ENG-'+String(i).padStart(3,'0'),
-      type:'工程卡',
-      areaId: engArea.id,
-      usageScope:'全棟21F',
-      status:'可借用',
-      note:'',
-      createdAt:new Date().toISOString()
-    });
-  }
+function pols(){return `<div class="row"><h1>保單</h1><button class="pri" onclick="fp()">新增保單</button></div>
+ ${S.p.length?S.p.map(p=>`<div class="card"><div class="row"><b>要保人 ${esc(cn(p.cid))}</b><span class="tag">${esc(p.type)}</span></div>
+ <div class="mu">${esc(p.co)} ${esc(p.no)}</div><div class="mu">被保險人：${insTxt(p)}</div><div class="mu">${fd(p.start)} 至 ${fd(p.end)}　NT$ ${Number(p.fee||0).toLocaleString("zh-TW")}</div>
+ <div class="mu">${esc(p.status)}${p.plate?"　車牌 "+esc(p.plate):""}${p.addr?"　"+esc(p.addr):""}</div>
+ <div style="margin-top:8px"><button class="sm" onclick="fp('${p.id}')">編輯</button> <button class="sm dg" onclick="del('p','${p.id}')">${armed==="p"+p.id?"再按一次刪除":"刪除"}</button></div></div>`).join(""):`<div class="empty">還沒有保單，請先新增客戶再建立保單</div>`}`}
 
-  const vendors = [
-    {id:uid(),name:'業主',contact:'',phone:'',note:'',active:true},
-    {id:uid(),name:'監造',contact:'',phone:'',note:'',active:true},
-    {id:uid(),name:'驗屋廠商',contact:'',phone:'',note:'',active:true},
-  ];
+function rem(){const d=due();return `<h1>續保提醒</h1><div class="mu">到期前 90、60、30、14、7、3、1 天；已續保、已取消、不續保的保單不會出現</div>
+ ${d.length?d.map(x=>`<div class="card"><div class="row"><b>${esc(cn(x.p.cid))}</b>${dayTag(x.n)}</div>
+ <div class="mu">${esc(x.p.type)}　${esc(x.p.co)} ${esc(x.p.no)}　被保險人：${insTxt(x.p)}</div><div class="mu">到期 ${fd(x.p.end)}　${x.n>=0?"目前在 "+step(x.n)+" 天提醒區間　":""}${esc(x.p.status)}</div></div>`).join(""):`<div class="empty">90 天內沒有需要處理的到期保單</div>`}`}
 
-  return {
-    equipment, areas, vendors,
-    borrowRecords: [],
-    settings:{
-      siteName:'○○建案',
-      projectName:'○○新建工程',
-      manageUnit:'工地辦公室',
-      overdueMinutes: 480, // 預設逾期判定：8小時
-      defaultBorrowTime: '', // blank = now
-      defaultReturnTime: '' // blank = +N hours later handled separately
-    },
-    meta:{ initializedAt: new Date().toISOString(), version:1 }
-  };
-}
+const sheet=h=>{document.getElementById("sheetBody").innerHTML=h;document.getElementById("sheet").classList.add("open")};
+const closeS=()=>document.getElementById("sheet").classList.remove("open");
+document.getElementById("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")closeS()});
+const v=id=>document.getElementById(id).value.trim();
+const opt=(a,s)=>a.map(x=>`<option ${x===s?"selected":""}>${x}</option>`).join("");
 
-let DB = load();
-function load(){
-  try{
-    const raw = localStorage.getItem(DB_KEY);
-    if(raw){
-      const parsed = JSON.parse(raw);
-      // basic shape safety
-      if(parsed && parsed.equipment && parsed.areas) return parsed;
-    }
-  }catch(e){ console.warn('load failed', e); }
-  const fresh = defaultDB();
-  localStorage.setItem(DB_KEY, JSON.stringify(fresh));
-  return fresh;
-}
-function save(){
-  localStorage.setItem(DB_KEY, JSON.stringify(DB));
-}
+function fc(id){const c=S.c.find(x=>x.id===id)||{};
+ sheet(`<h1>${id?"編輯客戶":"新增客戶"}</h1>
+ <label>客戶姓名（必填）</label><input id="n" value="${esc(c.name)}">
+ <label>身分證字號</label><input id="i" value="${esc(c.idno)}" maxlength="10" autocapitalize="characters">
+ <label>出生年月日</label><input id="b" type="date" value="${esc(c.birth)}">
+ <label>手機</label><input id="ph" inputmode="tel" value="${esc(c.phone)}">
+ <label>備註</label><textarea id="nt" rows="3">${esc(c.note)}</textarea>
+ <div class="err" id="e"></div><div class="row"><button onclick="closeS()">取消</button><button class="pri" onclick="sc('${id||""}')">儲存客戶</button></div>`)}
+function sc(id){const o={name:v("n"),idno:v("i").toUpperCase(),birth:v("b"),phone:v("ph"),note:v("nt")},e=document.getElementById("e");
+ if(!o.name)return e.textContent="請填寫客戶姓名";
+ if(o.idno&&!/^[A-Z][12]\d{8}$/.test(o.idno))return e.textContent="身分證字號格式不正確，應為 1 個英文字母加 9 碼數字";
+ const dup=o.idno&&S.c.find(c=>c.idno===o.idno&&c.id!==id);if(dup&&!confirmDup(dup))return e.textContent=`已有相同身分證字號的客戶：${dup.name}。如確定要建立，請再按一次儲存`;
+ if(id)Object.assign(S.c.find(c=>c.id===id),o);else S.c.push({id:uid(),...o});
+ dupArm=null;save();closeS();toast("客戶已儲存");draw()}
+let dupArm=null;function confirmDup(d){if(dupArm===d.id)return true;dupArm=d.id;return false}
 
-/* ===================== 工具 ===================== */
-function pad2(n){ return String(n).padStart(2,'0'); }
-function fmtDate(d){
-  const x = (d instanceof Date)? d : new Date(d);
-  return x.getFullYear()+'-'+pad2(x.getMonth()+1)+'-'+pad2(x.getDate());
-}
-function fmtTime(d){
-  const x = (d instanceof Date)? d : new Date(d);
-  return pad2(x.getHours())+':'+pad2(x.getMinutes());
-}
-function nowDate(){ return fmtDate(new Date()); }
-function nowTime(){ return fmtTime(new Date()); }
-function combineDT(dateStr, timeStr){
-  if(!dateStr) return null;
-  return new Date(dateStr+'T'+(timeStr||'00:00')+':00');
-}
-function areaName(areaId){
-  const a = DB.areas.find(x=>x.id===areaId);
-  return a? a.name : '未指定';
-}
-function vendorName(vendorId, fallback){
-  if(vendorId==='OTHER') return fallback || '其他';
-  const v = DB.vendors.find(x=>x.id===vendorId);
-  return v? v.name : (fallback || '未知廠商');
-}
-function equipmentByCode(code){ return DB.equipment.find(e=>e.code===code); }
-function escapeHtml(s){
-  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+function fp(id){if(!S.c.length)return toast("請先新增客戶");if(!TYPES.length)return toast("請先到設定新增險種");const p=S.p.find(x=>x.id===id)||{type:TYPES[0],status:"草稿"};const ins=p.ins||[],same=!ins.length||(ins.length===1&&ins[0]===p.cid);
+ sheet(`<h1>${id?"編輯保單":"新增保單"}</h1>
+ <label>要保人（必填）</label><select id="c">${S.c.map(c=>`<option value="${c.id}" ${c.id===p.cid?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+ <label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input type="checkbox" id="same" style="width:auto;min-height:0" onchange="ts()" ${same?"checked":""}>被保險人與要保人相同</label>
+ <div id="insl"><label>被保險人（可複選，限已建立的客戶）</label>${S.c.map(c=>`<label style="display:flex;gap:8px;align-items:center;color:var(--tx);margin:4px 0"><input type="checkbox" class="ib" value="${c.id}" style="width:auto;min-height:0" ${ins.includes(c.id)?"checked":""}>${esc(c.name)}</label>`).join("")}</div>
+ <label>險種</label><select id="t" onchange="tg()">${opt(TYPES.includes(p.type)?TYPES:[...TYPES,p.type],p.type)}</select>
+ <label>保險公司</label><input id="co" value="${esc(p.co)}"><label>保單號碼</label><input id="no" value="${esc(p.no)}">
+ <label>起保日期</label><input id="s" type="date" value="${esc(p.start)}"><label>到期日期</label><input id="en" type="date" value="${esc(p.end)}">
+ <label>保費（新臺幣）</label><input id="f" inputmode="numeric" value="${esc(p.fee)}">
+ <label>保單狀態</label><select id="st">${opt(STATUS,p.status)}</select>
+ <div id="car"><label>車牌號碼</label><input id="pl" value="${esc(p.plate)}"></div>
+ <div id="fire"><label>建築地址</label><input id="ad" value="${esc(p.addr)}"></div>
+ <div class="err" id="e"></div><div class="row"><button onclick="closeS()">取消</button><button class="pri" onclick="sp('${id||""}')">儲存保單</button></div>`);tg();ts()}
+const insTxt=p=>((p.ins&&p.ins.length)?p.ins:[p.cid]).map(i=>esc(cn(i))).join("、");
+function ts(){document.getElementById("insl").style.display=document.getElementById("same").checked?"none":""}
+function tg(){const t=document.getElementById("t").value;document.getElementById("car").style.display=t==="車險"?"":"none";document.getElementById("fire").style.display=t==="火險"?"":"none"}
+function sp(id){const t=v("t"),o={cid:v("c"),ins:document.getElementById("same").checked?[v("c")]:[...document.querySelectorAll(".ib:checked")].map(x=>x.value),type:t,co:v("co"),no:v("no"),start:v("s"),end:v("en"),fee:v("f").replace(/,/g,""),status:v("st"),plate:t==="車險"?v("pl"):"",addr:t==="火險"?v("ad"):""},e=document.getElementById("e");
+ if(!o.ins.length)return e.textContent="請至少選擇一位被保險人";
+ if(o.start&&o.end&&o.end<=o.start)return e.textContent="到期日期必須晚於起保日期";
+ if(o.fee&&!/^\d+$/.test(o.fee))return e.textContent="保費請輸入整數數字";
+ if(o.status==="有效"&&!o.end)return e.textContent="狀態為有效時，請填寫到期日期";
+ if(id)Object.assign(S.p.find(p=>p.id===id),o);else S.p.push({id:uid(),...o});
+ save();closeS();toast("保單已儲存");draw()}
 
-function isOverdue(rec){
-  if(rec.status!=='借出中') return false;
-  if(!rec.expectedReturnDate || !rec.expectedReturnTime) return false;
-  const expected = combineDT(rec.expectedReturnDate, rec.expectedReturnTime);
-  return expected && (new Date() > expected);
-}
-function overdueMinutesOf(rec){
-  const expected = combineDT(rec.expectedReturnDate, rec.expectedReturnTime);
-  if(!expected) return 0;
-  return Math.floor((new Date() - expected)/60000);
-}
+function del(k,id){if(armed===k+id){if(k==="c"){S.r=S.r.filter(r=>r.a!==id&&r.b!==id);S.l=S.l.filter(l=>l.cid!==id);S.o=S.o.filter(o=>o.cid!==id);S.y=S.y.filter(y=>y.cid!==id);S.k=S.k.filter(k=>k.cid!==id);S.p.forEach(p=>{if(p.ins)p.ins=p.ins.filter(i=>i!==id)})}if(k==="p")S.l.forEach(l=>{if(l.pid===id)l.pid=""});if(k==="o")S.l.forEach(l=>{if(l.oid===id)l.oid=""});if(k==="p")S.y.forEach(y=>{y.alloc=(y.alloc||[]).filter(a=>a.pid!==id)});S[k].splice(S[k].findIndex(x=>x.id===id),1);armed=null;save();toast("已刪除");draw()}else{armed=k+id;draw();setTimeout(()=>{if(armed===k+id){armed=null;draw()}},4000)}}
 
-function toast(msg, kind){
-  const wrap = document.getElementById('toastWrap');
-  const t = document.createElement('div');
-  t.className = 'toast'+(kind? ' '+kind:'');
-  t.textContent = msg;
-  wrap.appendChild(t);
-  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 2600);
-}
-
-function statusBadge(status){
-  const map = {
-    '可借用':['badge-avail','可借用'],
-    '借出中':['badge-out','借出中'],
-    '逾期未還':['badge-overdue','逾期未還'],
-    '停用':['badge-disabled','停用'],
-    '遺失':['badge-lost','遺失'],
-    '故障':['badge-broken','故障']
-  };
-  const m = map[status] || ['badge-disabled', status];
-  return '<span class="badge '+m[0]+'"><span class="dot"></span>'+m[1]+'</span>';
-}
-
-/* ===================== 路由 / 畫面切換 ===================== */
-const PAGE_TITLES = {
-  dashboard:'儀表板', equipment:'門禁設備管理', areas:'門禁區域管理', borrow:'新增借用',
-  current:'目前借出', history:'借還紀錄', vendors:'廠商管理', reports:'統計報表', settings:'系統設定'
-};
-let currentPage = 'dashboard';
-let globalSearchTerm = '';
-
-document.getElementById('navList').addEventListener('click', (e)=>{
-  const item = e.target.closest('.nav-item');
-  if(!item) return;
-  navigate(item.dataset.page);
-  document.getElementById('sidebar').classList.remove('open');
-});
-function navigate(page){
-  currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(n=> n.classList.toggle('active', n.dataset.page===page));
-  document.getElementById('pageTitle').textContent = PAGE_TITLES[page] || '';
-  render();
-}
-
-document.getElementById('menuToggle').addEventListener('click', ()=>{
-  document.getElementById('sidebar').classList.toggle('open');
-});
-
-let searchDebounce;
-document.getElementById('globalSearch').addEventListener('input', (e)=>{
-  clearTimeout(searchDebounce);
-  const val = e.target.value.trim();
-  searchDebounce = setTimeout(()=>{
-    globalSearchTerm = val;
-    if(val && currentPage!=='history'){ navigate('history'); }
-    else render();
-  }, 250);
-});
-
-/* ===================== Modal 輔助 ===================== */
-function openModal(html, onMount){
-  document.getElementById('modalBox').innerHTML = html;
-  document.getElementById('overlay').classList.add('show');
-  if(onMount) onMount(document.getElementById('modalBox'));
-}
-function closeModal(){
-  document.getElementById('overlay').classList.remove('show');
-  document.getElementById('modalBox').innerHTML='';
-}
-document.getElementById('overlay').addEventListener('click',(e)=>{
-  if(e.target.id==='overlay') closeModal();
-});
-
-/* ===================== 逾期同步 ===================== */
-function syncOverdue(){
-  let changed = false;
-  DB.borrowRecords.forEach(rec=>{
-    if(rec.status==='借出中' && isOverdue(rec)){
-      rec.status = '逾期未還';
-      changed = true;
-    }
-  });
-  if(changed) save();
-}
-
-/* ===================== render 主流程 ===================== */
-function render(){
-  syncOverdue();
-  const el = document.getElementById('content');
-  switch(currentPage){
-    case 'dashboard': el.innerHTML = renderDashboard(); bindDashboard(); break;
-    case 'equipment': el.innerHTML = renderEquipment(); bindEquipment(); break;
-    case 'areas': el.innerHTML = renderAreas(); bindAreas(); break;
-    case 'borrow': el.innerHTML = renderBorrow(); bindBorrow(); break;
-    case 'current': el.innerHTML = renderCurrent(); bindCurrent(); break;
-    case 'history': el.innerHTML = renderHistory(); bindHistory(); break;
-    case 'vendors': el.innerHTML = renderVendors(); bindVendors(); break;
-    case 'reports': el.innerHTML = renderReports(); break;
-    case 'settings': el.innerHTML = renderSettings(); bindSettings(); break;
-    default: el.innerHTML = '<p>找不到頁面</p>';
-  }
-}
-
-/* ===================== 儀表板 ===================== */
-function renderDashboard(){
-  const total = DB.equipment.filter(e=>e.status!=='停用').length;
-  const avail = DB.equipment.filter(e=>e.status==='可借用').length;
-  const outCount = DB.borrowRecords.filter(r=>r.status==='借出中'||r.status==='逾期未還').length;
-  const overdue = DB.borrowRecords.filter(r=>r.status==='逾期未還').length;
-  const today = nowDate();
-  const todayBorrow = DB.borrowRecords.filter(r=>r.date===today).length;
-  const todayReturn = DB.borrowRecords.filter(r=>r.returnDate===today).length;
-
-  const overdueList = DB.borrowRecords.filter(r=>r.status==='逾期未還').slice(0,5);
-
-  let overdueHtml = '';
-  if(overdueList.length){
-    overdueHtml = '<div class="overdue-banner">⚠ 目前有 '+overdue+' 筆逾期未還，請儘速處理：&nbsp;'
-      + overdueList.map(r=>{
-          const eq = DB.equipment.find(e=>e.id===r.equipmentId);
-          const mins = overdueMinutesOf(r);
-          const hrs = Math.floor(mins/60), rem = mins%60;
-          const label = hrs>0 ? hrs+'小時'+rem+'分' : rem+'分';
-          return (eq?eq.code:'?')+'（逾期 '+label+'）';
-        }).join('、') + '</div>';
-  }
-
-  const recent = DB.borrowRecords.slice().sort((a,b)=> (b.borrowTs||0)-(a.borrowTs||0)).slice(0,8);
-
-  return `
-  <div class="stat-grid">
-    <div class="stat-card s-total"><div class="bar"></div><div class="num">${total}</div><div class="lbl">門禁設備總數</div></div>
-    <div class="stat-card s-avail"><div class="bar"></div><div class="num">${avail}</div><div class="lbl">可借用</div></div>
-    <div class="stat-card s-out"><div class="bar"></div><div class="num">${outCount}</div><div class="lbl">借出中</div></div>
-    <div class="stat-card s-overdue"><div class="bar"></div><div class="num">${overdue}</div><div class="lbl">逾期／異常</div></div>
-    <div class="stat-card s-in"><div class="bar"></div><div class="num">${todayBorrow}</div><div class="lbl">今日借用</div></div>
-    <div class="stat-card s-outn"><div class="bar"></div><div class="num">${todayReturn}</div><div class="lbl">今日歸還</div></div>
-  </div>
-  ${overdueHtml}
-  <div class="panel">
-    <div class="panel-head">
-      <h2>最新借還動態</h2>
-      <button class="btn btn-primary no-print" data-goto="borrow">＋ 新增借用</button>
-    </div>
-    <div class="panel-body table-wrap">
-      <table>
-        <thead><tr><th>日期</th><th>設備編號</th><th>門禁區域</th><th>借用廠商</th><th>借用人</th><th>狀態</th></tr></thead>
-        <tbody>
-        ${recent.length? recent.map(r=>{
-          const eq = DB.equipment.find(e=>e.id===r.equipmentId);
-          return '<tr><td>'+r.date+'</td><td>'+(eq?eq.code:'-')+'</td><td>'+(eq?areaName(eq.areaId):'-')+'</td><td>'+vendorName(r.vendorId,r.vendorOther)+'</td><td>'+escapeHtml(r.borrower)+'</td><td>'+statusBadge(r.status)+'</td></tr>';
-        }).join('') : '<tr class="empty-row"><td colspan="6">尚無借還紀錄</td></tr>'}
-        </tbody>
-      </table>
-    </div>
-  </div>`;
-}
-function bindDashboard(){
-  document.querySelectorAll('[data-goto]').forEach(b=> b.addEventListener('click', ()=> navigate(b.dataset.goto)) );
-}
-
-/* ===================== 門禁設備管理 ===================== */
-let eqFilter = {area:'', type:'', status:'', text:''};
-function renderEquipment(){
-  const areaOptions = DB.areas.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
-  let list = DB.equipment.slice();
-  if(eqFilter.area) list = list.filter(e=>e.areaId===eqFilter.area);
-  if(eqFilter.type) list = list.filter(e=>e.type===eqFilter.type);
-  if(eqFilter.status) list = list.filter(e=>e.status===eqFilter.status);
-  if(eqFilter.text){
-    const t = eqFilter.text.toLowerCase();
-    list = list.filter(e=> e.code.toLowerCase().includes(t) || (e.usageScope||'').toLowerCase().includes(t));
-  }
-  list.sort((a,b)=> a.code.localeCompare(b.code));
-
-  return `
-  <div class="panel">
-    <div class="panel-head">
-      <h2>門禁設備清單（共 ${DB.equipment.length} 件）</h2>
-      <button class="btn btn-primary no-print" id="btnAddEquipment">＋ 新增門禁設備</button>
-    </div>
-    <div class="panel-body">
-      <div class="toolbar no-print">
-        <input type="text" class="grow" id="eqSearch" placeholder="搜尋設備編號或使用範圍" value="${escapeHtml(eqFilter.text)}">
-        <select id="eqAreaFilter"><option value="">全部區域</option>${areaOptions}</select>
-        <select id="eqTypeFilter">
-          <option value="">全部類型</option>
-          <option value="磁扣">磁扣</option>
-          <option value="工程卡">工程卡</option>
-          <option value="其他">其他</option>
-        </select>
-        <select id="eqStatusFilter">
-          <option value="">全部狀態</option>
-          <option value="可借用">可借用</option>
-          <option value="借出中">借出中</option>
-          <option value="逾期未還">逾期未還</option>
-          <option value="停用">停用</option>
-          <option value="遺失">遺失</option>
-          <option value="故障">故障</option>
-        </select>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>設備編號</th><th>類型</th><th>門禁區域</th><th>使用範圍</th><th>狀態</th><th>備註</th><th>建立日期</th><th class="no-print">操作</th></tr></thead>
-          <tbody>
-          ${list.length? list.map(e=>`
-            <tr>
-              <td><strong>${escapeHtml(e.code)}</strong></td>
-              <td>${escapeHtml(e.type)}</td>
-              <td>${escapeHtml(areaName(e.areaId))}</td>
-              <td>${escapeHtml(e.usageScope||'-')}</td>
-              <td>${statusBadge(e.status)}</td>
-              <td>${escapeHtml(e.note||'-')}</td>
-              <td>${fmtDate(e.createdAt)}</td>
-              <td class="no-print"><button class="btn btn-sm" data-edit-eq="${e.id}">編輯</button></td>
-            </tr>`).join('') : '<tr class="empty-row"><td colspan="8">找不到符合條件的設備</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>`;
-}
-function bindEquipment(){
-  document.getElementById('btnAddEquipment').addEventListener('click', ()=> openEquipmentModal(null));
-  document.getElementById('eqSearch').addEventListener('input', e=>{ eqFilter.text = e.target.value; render(); restoreFocus('eqSearch'); });
-  document.getElementById('eqAreaFilter').value = eqFilter.area;
-  document.getElementById('eqAreaFilter').addEventListener('change', e=>{ eqFilter.area = e.target.value; render(); });
-  document.getElementById('eqTypeFilter').value = eqFilter.type;
-  document.getElementById('eqTypeFilter').addEventListener('change', e=>{ eqFilter.type = e.target.value; render(); });
-  document.getElementById('eqStatusFilter').value = eqFilter.status;
-  document.getElementById('eqStatusFilter').addEventListener('change', e=>{ eqFilter.status = e.target.value; render(); });
-  document.querySelectorAll('[data-edit-eq]').forEach(b=> b.addEventListener('click', ()=> openEquipmentModal(b.dataset.editEq)) );
-}
-function restoreFocus(id){
-  const elx = document.getElementById(id);
-  if(elx){ elx.focus(); const v=elx.value; elx.value=''; elx.value=v; }
-}
-function openEquipmentModal(id){
-  const editing = id? DB.equipment.find(e=>e.id===id) : null;
-  const activeAreas = DB.areas.filter(a=>a.active || (editing && editing.areaId===a.id));
-  const areaOpts = activeAreas.map(a=>'<option value="'+a.id+'" '+((editing&&editing.areaId===a.id)?'selected':'')+'>'+escapeHtml(a.name)+'</option>').join('');
-  openModal(`
-    <div class="modal-head"><h3>${editing? '編輯門禁設備' : '新增門禁設備'}</h3><button class="modal-close" id="mClose">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="field"><label>設備編號 *</label><input type="text" id="fCode" value="${editing?escapeHtml(editing.code):''}" placeholder="例如 PUB-001"></div>
-        <div class="field"><label>設備類型 *</label>
-          <select id="fType">
-            <option value="磁扣" ${editing&&editing.type==='磁扣'?'selected':''}>磁扣</option>
-            <option value="工程卡" ${editing&&editing.type==='工程卡'?'selected':''}>工程卡</option>
-            <option value="其他" ${editing&&editing.type==='其他'?'selected':''}>其他</option>
-          </select>
-        </div>
-        <div class="field"><label>所屬區域 *</label><select id="fArea">${areaOpts}</select></div>
-        <div class="field"><label>使用範圍</label><input type="text" id="fScope" value="${editing?escapeHtml(editing.usageScope||''):''}" placeholder="例如 健身房／全棟21F"></div>
-        <div class="field"><label>設備狀態</label>
-          <select id="fStatus">
-            ${['可借用','借出中','停用','遺失','故障'].map(s=>'<option value="'+s+'" '+((editing&&editing.status===s)?'selected':(!editing&&s==='可借用'?'selected':''))+'>'+s+'</option>').join('')}
-          </select>
-          <span class="help">若此設備目前為「借出中」，請透過借用/歸還流程調整狀態，避免資料不一致。</span>
-        </div>
-        <div class="field full"><label>備註</label><textarea id="fNote">${editing?escapeHtml(editing.note||''):''}</textarea></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn" id="mCancel">取消</button>
-      <button class="btn btn-primary" id="mSave">儲存</button>
-    </div>
-  `, ()=>{
-    document.getElementById('mClose').addEventListener('click', closeModal);
-    document.getElementById('mCancel').addEventListener('click', closeModal);
-    document.getElementById('mSave').addEventListener('click', ()=>{
-      const code = document.getElementById('fCode').value.trim();
-      if(!code){ toast('請輸入設備編號','err'); return; }
-      const dup = DB.equipment.find(e=> e.code===code && (!editing || e.id!==editing.id));
-      if(dup){ toast('此設備編號已存在','err'); return; }
-      const type = document.getElementById('fType').value;
-      const areaId = document.getElementById('fArea').value;
-      const scope = document.getElementById('fScope').value.trim();
-      const status = document.getElementById('fStatus').value;
-      const note = document.getElementById('fNote').value.trim();
-      if(editing){
-        editing.code=code; editing.type=type; editing.areaId=areaId; editing.usageScope=scope; editing.status=status; editing.note=note;
-        toast('已更新設備資料','ok');
-      }else{
-        DB.equipment.push({id:uid(),code,type,areaId,usageScope:scope,status,note,createdAt:new Date().toISOString()});
-        toast('已新增設備','ok');
-      }
-      save(); closeModal(); render();
-    });
-  });
-}
-
-/* ===================== 門禁區域管理 ===================== */
-function renderAreas(){
-  const list = DB.areas.slice().sort((a,b)=> (b.active - a.active) || a.code.localeCompare(b.code));
-  return `
-  <div class="panel">
-    <div class="panel-head">
-      <h2>門禁區域清單（共 ${DB.areas.length} 個）</h2>
-      <button class="btn btn-primary no-print" id="btnAddArea">＋ 新增門禁區域</button>
-    </div>
-    <div class="panel-body table-wrap">
-      <div class="section-note">區域可自由新增，例如公設區、地下室、停車場、機房、屋頂等，不限於樓層。停用區域不會被刪除，歷史紀錄仍會保留。</div>
-      <table>
-        <thead><tr><th>區域代碼</th><th>區域名稱</th><th>類型</th><th>說明</th><th>設備數</th><th>狀態</th><th class="no-print">操作</th></tr></thead>
-        <tbody>
-        ${list.length? list.map(a=>{
-          const cnt = DB.equipment.filter(e=>e.areaId===a.id).length;
-          return `<tr>
-            <td><strong>${escapeHtml(a.code)}</strong></td>
-            <td>${escapeHtml(a.name)}</td>
-            <td>${escapeHtml(a.type)}</td>
-            <td>${escapeHtml(a.description||'-')}</td>
-            <td>${cnt}</td>
-            <td>${a.active? '<span class="badge badge-avail"><span class="dot"></span>啟用中</span>' : '<span class="badge badge-disabled"><span class="dot"></span>已停用</span>'}</td>
-            <td class="no-print">
-              <button class="btn btn-sm" data-edit-area="${a.id}">編輯</button>
-              <button class="btn btn-sm" data-toggle-area="${a.id}">${a.active?'停用':'啟用'}</button>
-            </td>
-          </tr>`;
-        }).join('') : '<tr class="empty-row"><td colspan="7">尚無區域資料</td></tr>'}
-        </tbody>
-      </table>
-    </div>
-  </div>`;
-}
-function bindAreas(){
-  document.getElementById('btnAddArea').addEventListener('click', ()=> openAreaModal(null));
-  document.querySelectorAll('[data-edit-area]').forEach(b=> b.addEventListener('click', ()=> openAreaModal(b.dataset.editArea)));
-  document.querySelectorAll('[data-toggle-area]').forEach(b=> b.addEventListener('click', ()=>{
-    const a = DB.areas.find(x=>x.id===b.dataset.toggleArea);
-    if(!a) return;
-    if(a.active){
-      const inUse = DB.equipment.some(e=> e.areaId===a.id && e.status==='借出中');
-      if(inUse){ toast('此區域仍有設備借出中，暫無法停用','err'); return; }
-    }
-    a.active = !a.active; save(); render();
-    toast(a.active? '已啟用區域':'已停用區域，歷史紀錄仍保留','ok');
-  }));
-}
-function openAreaModal(id){
-  const editing = id? DB.areas.find(a=>a.id===id) : null;
-  openModal(`
-    <div class="modal-head"><h3>${editing?'編輯門禁區域':'新增門禁區域'}</h3><button class="modal-close" id="mClose">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="field"><label>區域代碼 *</label><input type="text" id="fCode" value="${editing?escapeHtml(editing.code):''}" placeholder="例如 PUB、B1"></div>
-        <div class="field"><label>區域名稱 *</label><input type="text" id="fName" value="${editing?escapeHtml(editing.name):''}" placeholder="例如 公設區"></div>
-        <div class="field"><label>區域類型</label>
-          <select id="fType">
-            ${['樓層','公設','地下室','停車場','管理室','機房','屋頂','工程','其他'].map(t=>'<option value="'+t+'" '+((editing&&editing.type===t)?'selected':'')+'>'+t+'</option>').join('')}
-          </select>
-        </div>
-        <div class="field"><label>是否啟用</label>
-          <select id="fActive">
-            <option value="1" ${(!editing||editing.active)?'selected':''}>啟用</option>
-            <option value="0" ${(editing&&!editing.active)?'selected':''}>停用</option>
-          </select>
-        </div>
-        <div class="field full"><label>說明</label><textarea id="fDesc">${editing?escapeHtml(editing.description||''):''}</textarea></div>
-      </div>
-    </div>
-    <div class="modal-foot"><button class="btn" id="mCancel">取消</button><button class="btn btn-primary" id="mSave">儲存</button></div>
-  `, ()=>{
-    document.getElementById('mClose').addEventListener('click', closeModal);
-    document.getElementById('mCancel').addEventListener('click', closeModal);
-    document.getElementById('mSave').addEventListener('click', ()=>{
-      const code = document.getElementById('fCode').value.trim();
-      const name = document.getElementById('fName').value.trim();
-      if(!code || !name){ toast('請輸入區域代碼與名稱','err'); return; }
-      const dup = DB.areas.find(a=> a.code===code && (!editing || a.id!==editing.id));
-      if(dup){ toast('此區域代碼已存在','err'); return; }
-      const type = document.getElementById('fType').value;
-      const active = document.getElementById('fActive').value==='1';
-      const desc = document.getElementById('fDesc').value.trim();
-      if(editing){
-        editing.code=code; editing.name=name; editing.type=type; editing.active=active; editing.description=desc;
-        toast('已更新區域','ok');
-      }else{
-        DB.areas.push({id:uid(),code,name,type,description:desc,active});
-        toast('已新增區域','ok');
-      }
-      save(); closeModal(); render();
-    });
-  });
-}
-
-/* ===================== 廠商管理 ===================== */
-function renderVendors(){
-  const list = DB.vendors.slice().sort((a,b)=> (b.active-a.active) || a.name.localeCompare(b.name));
-  return `
-  <div class="panel">
-    <div class="panel-head">
-      <h2>廠商清單（共 ${DB.vendors.length} 家）</h2>
-      <button class="btn btn-primary no-print" id="btnAddVendor">＋ 新增廠商</button>
-    </div>
-    <div class="panel-body table-wrap">
-      <table>
-        <thead><tr><th>廠商名稱</th><th>聯絡人</th><th>聯絡電話</th><th>備註</th><th>狀態</th><th class="no-print">操作</th></tr></thead>
-        <tbody>
-        ${list.length? list.map(v=>`
-          <tr>
-            <td><strong>${escapeHtml(v.name)}</strong></td>
-            <td>${escapeHtml(v.contact||'-')}</td>
-            <td>${escapeHtml(v.phone||'-')}</td>
-            <td>${escapeHtml(v.note||'-')}</td>
-            <td>${v.active? '<span class="badge badge-avail"><span class="dot"></span>啟用中</span>' : '<span class="badge badge-disabled"><span class="dot"></span>已停用</span>'}</td>
-            <td class="no-print">
-              <button class="btn btn-sm" data-edit-vendor="${v.id}">編輯</button>
-              <button class="btn btn-sm" data-toggle-vendor="${v.id}">${v.active?'停用':'啟用'}</button>
-            </td>
-          </tr>`).join('') : '<tr class="empty-row"><td colspan="6">尚無廠商資料</td></tr>'}
-        </tbody>
-      </table>
-    </div>
-  </div>`;
-}
-function bindVendors(){
-  document.getElementById('btnAddVendor').addEventListener('click', ()=> openVendorModal(null));
-  document.querySelectorAll('[data-edit-vendor]').forEach(b=> b.addEventListener('click', ()=> openVendorModal(b.dataset.editVendor)));
-  document.querySelectorAll('[data-toggle-vendor]').forEach(b=> b.addEventListener('click', ()=>{
-    const v = DB.vendors.find(x=>x.id===b.dataset.toggleVendor);
-    if(!v) return;
-    v.active = !v.active; save(); render();
-    toast(v.active?'已啟用廠商':'已停用廠商，歷史紀錄仍保留','ok');
-  }));
-}
-function openVendorModal(id){
-  const editing = id? DB.vendors.find(v=>v.id===id): null;
-  openModal(`
-    <div class="modal-head"><h3>${editing?'編輯廠商':'新增廠商'}</h3><button class="modal-close" id="mClose">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="field full"><label>廠商名稱 *</label><input type="text" id="fName" value="${editing?escapeHtml(editing.name):''}" placeholder="例如 ○○營造"></div>
-        <div class="field"><label>聯絡人</label><input type="text" id="fContact" value="${editing?escapeHtml(editing.contact||''):''}"></div>
-        <div class="field"><label>聯絡電話</label><input type="text" id="fPhone" value="${editing?escapeHtml(editing.phone||''):''}"></div>
-        <div class="field full"><label>備註</label><textarea id="fNote">${editing?escapeHtml(editing.note||''):''}</textarea></div>
-      </div>
-    </div>
-    <div class="modal-foot"><button class="btn" id="mCancel">取消</button><button class="btn btn-primary" id="mSave">儲存</button></div>
-  `, ()=>{
-    document.getElementById('mClose').addEventListener('click', closeModal);
-    document.getElementById('mCancel').addEventListener('click', closeModal);
-    document.getElementById('mSave').addEventListener('click', ()=>{
-      const name = document.getElementById('fName').value.trim();
-      if(!name){ toast('請輸入廠商名稱','err'); return; }
-      const contact = document.getElementById('fContact').value.trim();
-      const phone = document.getElementById('fPhone').value.trim();
-      const note = document.getElementById('fNote').value.trim();
-      if(editing){ editing.name=name; editing.contact=contact; editing.phone=phone; editing.note=note; toast('已更新廠商','ok'); }
-      else{ DB.vendors.push({id:uid(),name,contact,phone,note,active:true}); toast('已新增廠商','ok'); }
-      save(); closeModal(); render();
-    });
-  });
-}
-
-/* ===================== 新增借用 ===================== */
-function renderBorrow(){
-  const availAreas = DB.areas.filter(a=>a.active);
-  const availEquipment = DB.equipment.filter(e=> e.status==='可借用');
-  const activeVendors = DB.vendors.filter(v=>v.active);
-  const eqOptions = availEquipment
-    .sort((a,b)=>a.code.localeCompare(b.code))
-    .map(e=>`<label><input type="checkbox" value="${e.id}" class="eqCheck"> ${escapeHtml(e.code)}（${escapeHtml(areaName(e.areaId))} / ${escapeHtml(e.type)}）</label>`).join('');
-  const vendorOptions = activeVendors.map(v=>'<option value="'+v.id+'">'+escapeHtml(v.name)+'</option>').join('');
-
-  return `
-  <div class="panel">
-    <div class="panel-head"><h2>新增借用登記</h2></div>
-    <div class="panel-body">
-      <div class="section-note">下拉清單／勾選清單僅顯示目前「可借用」的設備，可一次借用多顆。</div>
-      <div class="form-grid one">
-        <div class="field">
-          <label>選擇門禁設備 *（可複選）</label>
-          <div class="checkbox-list" id="eqCheckList">
-            ${eqOptions || '<span class="help">目前沒有可借用的設備</span>'}
-          </div>
-        </div>
-      </div>
-      <div class="form-grid" style="margin-top:16px;">
-        <div class="field">
-          <label>借用廠商 *</label>
-          <select id="fVendor">
-            <option value="">請選擇廠商</option>
-            ${vendorOptions}
-            <option value="OTHER">其他（自行輸入）</option>
-          </select>
-        </div>
-        <div class="field" id="otherVendorWrap" style="display:none;">
-          <label>廠商名稱（其他）</label>
-          <input type="text" id="fVendorOther" placeholder="請輸入廠商名稱">
-        </div>
-        <div class="field"><label>借用人 *</label><input type="text" id="fBorrower" placeholder="請輸入姓名"></div>
-        <div class="field"><label>借用日期 *</label><input type="date" id="fDate" value="${nowDate()}"></div>
-        <div class="field"><label>借用時間 *</label><input type="time" id="fTime" value="${nowTime()}"></div>
-        <div class="field"><label>預計歸還日期</label><input type="date" id="fExpDate" value="${nowDate()}"></div>
-        <div class="field"><label>預計歸還時間</label><input type="time" id="fExpTime" value=""></div>
-        <div class="field full"><label>備註</label><textarea id="fNote" placeholder="例如：驗屋使用、21F驗屋、預計17:00歸還"></textarea></div>
-      </div>
-    </div>
-    <div class="modal-foot" style="border-top:1px solid var(--line);justify-content:flex-end;">
-      <button class="btn btn-primary" id="btnSubmitBorrow">確認借用</button>
-    </div>
-  </div>`;
-}
-function bindBorrow(){
-  const vendorSel = document.getElementById('fVendor');
-  const otherWrap = document.getElementById('otherVendorWrap');
-  vendorSel.addEventListener('change', ()=>{ otherWrap.style.display = vendorSel.value==='OTHER' ? 'flex':'none'; });
-
-  document.getElementById('btnSubmitBorrow').addEventListener('click', ()=>{
-    const checked = Array.from(document.querySelectorAll('.eqCheck:checked')).map(c=>c.value);
-    if(checked.length===0){ toast('請至少選擇一項門禁設備','err'); return; }
-    const vendorId = document.getElementById('fVendor').value;
-    if(!vendorId){ toast('請選擇借用廠商','err'); return; }
-    const vendorOther = document.getElementById('fVendorOther').value.trim();
-    if(vendorId==='OTHER' && !vendorOther){ toast('請輸入其他廠商名稱','err'); return; }
-    const borrower = document.getElementById('fBorrower').value.trim();
-    if(!borrower){ toast('請輸入借用人姓名','err'); return; }
-    const date = document.getElementById('fDate').value || nowDate();
-    const time = document.getElementById('fTime').value || nowTime();
-    const expDate = document.getElementById('fExpDate').value;
-    const expTime = document.getElementById('fExpTime').value;
-    const note = document.getElementById('fNote').value.trim();
-
-    let successCount = 0;
-    checked.forEach(eqId=>{
-      const eq = DB.equipment.find(e=>e.id===eqId);
-      if(!eq || eq.status!=='可借用'){
-        toast('此門禁設備目前已借出，無法再次借用。（'+(eq?eq.code:eqId)+'）','err');
-        return;
-      }
-      const rec = {
-        id: uid(),
-        equipmentId: eq.id,
-        date, vendorId, vendorOther,
-        borrower,
-        borrowTime: time,
-        borrowTs: combineDT(date,time) ? combineDT(date,time).getTime() : Date.now(),
-        expectedReturnDate: expDate || '',
-        expectedReturnTime: expTime || '',
-        returnDate:'', returnTime:'', returnCondition:'',
-        status:'借出中',
-        note
-      };
-      DB.borrowRecords.push(rec);
-      eq.status = '借出中';
-      successCount++;
-    });
-    if(successCount>0){
-      save();
-      toast('已成功登記借用 '+successCount+' 項設備','ok');
-      navigate('current');
-    }
-  });
-}
-
-/* ===================== 目前借出 ===================== */
-function renderCurrent(){
-  const list = DB.borrowRecords.filter(r=> r.status==='借出中' || r.status==='逾期未還')
-    .sort((a,b)=> (b.borrowTs||0)-(a.borrowTs||0));
-  return `
-  <div class="panel">
-    <div class="panel-head"><h2>目前借出（共 ${list.length} 筆）</h2></div>
-    <div class="panel-body table-wrap">
-      <table>
-        <thead><tr>
-          <th>設備編號</th><th>類型</th><th>區域</th><th>借用廠商</th><th>借用人</th>
-          <th>借用日期</th><th>借用時間</th><th>預計歸還</th><th>已借用</th><th>狀態</th><th class="no-print">操作</th>
-        </tr></thead>
-        <tbody>
-        ${list.length? list.map(r=>{
-          const eq = DB.equipment.find(e=>e.id===r.equipmentId);
-          const borrowedAt = r.borrowTs? new Date(r.borrowTs) : combineDT(r.date,r.borrowTime);
-          const elapsedMin = borrowedAt? Math.floor((Date.now()-borrowedAt.getTime())/60000) : 0;
-          const eh = Math.floor(elapsedMin/60), em = elapsedMin%60;
-          const expected = (r.expectedReturnDate && r.expectedReturnTime) ? r.expectedReturnDate+' '+r.expectedReturnTime : '-';
-          return `<tr>
-            <td><strong>${eq?escapeHtml(eq.code):'-'}</strong></td>
-            <td>${eq?escapeHtml(eq.type):'-'}</td>
-            <td>${eq?escapeHtml(areaName(eq.areaId)):'-'}</td>
-            <td>${escapeHtml(vendorName(r.vendorId,r.vendorOther))}</td>
-            <td>${escapeHtml(r.borrower)}</td>
-            <td>${r.date}</td>
-            <td>${r.borrowTime}</td>
-            <td>${expected}</td>
-            <td>${eh}小時${em}分</td>
-            <td>${statusBadge(r.status)}</td>
-            <td class="no-print">
-              <button class="btn btn-sm btn-green" data-return="${r.id}">歸還</button>
-              <button class="btn btn-sm" data-view="${r.id}">查看</button>
-            </td>
-          </tr>`;
-        }).join('') : '<tr class="empty-row"><td colspan="11">目前沒有借出中的設備</td></tr>'}
-        </tbody>
-      </table>
-    </div>
-  </div>`;
-}
-function bindCurrent(){
-  document.querySelectorAll('[data-return]').forEach(b=> b.addEventListener('click', ()=> openReturnModal(b.dataset.return)));
-  document.querySelectorAll('[data-view]').forEach(b=> b.addEventListener('click', ()=> openViewModal(b.dataset.view)));
-}
-function openReturnModal(recId){
-  const rec = DB.borrowRecords.find(r=>r.id===recId);
-  if(!rec) return;
-  const eq = DB.equipment.find(e=>e.id===rec.equipmentId);
-  openModal(`
-    <div class="modal-head"><h3>設備歸還 － ${eq?escapeHtml(eq.code):''}</h3><button class="modal-close" id="mClose">✕</button></div>
-    <div class="modal-body">
-      <dl class="kv-grid" style="margin-bottom:14px;">
-        <dt>借用廠商</dt><dd>${escapeHtml(vendorName(rec.vendorId,rec.vendorOther))}</dd>
-        <dt>借用人</dt><dd>${escapeHtml(rec.borrower)}</dd>
-        <dt>借用時間</dt><dd>${rec.date} ${rec.borrowTime}</dd>
-      </dl>
-      <div class="form-grid">
-        <div class="field"><label>歸還日期 *</label><input type="date" id="rDate" value="${nowDate()}"></div>
-        <div class="field"><label>歸還時間 *</label><input type="time" id="rTime" value="${nowTime()}"></div>
-        <div class="field full"><label>歸還狀態 *</label>
-          <select id="rCondition">
-            <option value="正常歸還">正常歸還</option>
-            <option value="損壞">損壞</option>
-            <option value="故障">故障</option>
-            <option value="遺失">遺失</option>
-          </select>
-        </div>
-        <div class="field full"><label>備註 <span id="noteRequired" class="help" style="display:none;color:var(--red);">（此狀態必須填寫備註，例如：磁扣外殼破損）</span></label>
-          <textarea id="rNote" placeholder="例如：磁扣外殼破損、工程卡無法感應、借用人表示遺失"></textarea>
-        </div>
-      </div>
-    </div>
-    <div class="modal-foot"><button class="btn" id="mCancel">取消</button><button class="btn btn-green" id="mSave">確認歸還</button></div>
-  `, ()=>{
-    document.getElementById('mClose').addEventListener('click', closeModal);
-    document.getElementById('mCancel').addEventListener('click', closeModal);
-    const condSel = document.getElementById('rCondition');
-    const noteReq = document.getElementById('noteRequired');
-    condSel.addEventListener('change', ()=>{
-      noteReq.style.display = condSel.value==='正常歸還' ? 'none':'inline';
-    });
-    document.getElementById('mSave').addEventListener('click', ()=>{
-      const rDate = document.getElementById('rDate').value || nowDate();
-      const rTime = document.getElementById('rTime').value || nowTime();
-      const condition = condSel.value;
-      const note = document.getElementById('rNote').value.trim();
-      if(condition!=='正常歸還' && !note){
-        toast('此歸還狀態必須輸入備註','err'); return;
-      }
-      rec.returnDate = rDate;
-      rec.returnTime = rTime;
-      rec.returnCondition = condition;
-      if(note) rec.note = (rec.note? rec.note+'；':'') + '歸還備註：'+note;
-      rec.status = condition==='正常歸還' ? '已歸還' : condition;
-
-      if(eq){
-        eq.status = condition==='正常歸還' ? '可借用' : condition;
-      }
-      save();
-      toast('已完成歸還登記','ok');
-      closeModal();
-      render();
-    });
-  });
-}
-function openViewModal(recId){
-  const rec = DB.borrowRecords.find(r=>r.id===recId);
-  if(!rec) return;
-  const eq = DB.equipment.find(e=>e.id===rec.equipmentId);
-  openModal(`
-    <div class="modal-head"><h3>借還紀錄詳情</h3><button class="modal-close" id="mClose">✕</button></div>
-    <div class="modal-body">
-      <dl class="kv-grid">
-        <dt>設備編號</dt><dd>${eq?escapeHtml(eq.code):'-'}</dd>
-        <dt>設備類型</dt><dd>${eq?escapeHtml(eq.type):'-'}</dd>
-        <dt>門禁區域</dt><dd>${eq?escapeHtml(areaName(eq.areaId)):'-'}</dd>
-        <dt>借用廠商</dt><dd>${escapeHtml(vendorName(rec.vendorId,rec.vendorOther))}</dd>
-        <dt>借用人</dt><dd>${escapeHtml(rec.borrower)}</dd>
-        <dt>借用日期</dt><dd>${rec.date}</dd>
-        <dt>借用時間</dt><dd>${rec.borrowTime}</dd>
-        <dt>預計歸還</dt><dd>${rec.expectedReturnDate? rec.expectedReturnDate+' '+rec.expectedReturnTime : '-'}</dd>
-        <dt>歸還日期</dt><dd>${rec.returnDate||'-'}</dd>
-        <dt>歸還時間</dt><dd>${rec.returnTime||'-'}</dd>
-        <dt>狀態</dt><dd>${statusBadge(rec.status)}</dd>
-        <dt>備註</dt><dd>${escapeHtml(rec.note||'-')}</dd>
-      </dl>
-    </div>
-    <div class="modal-foot"><button class="btn btn-primary" id="mClose2">關閉</button></div>
-  `, ()=>{
-    document.getElementById('mClose').addEventListener('click', closeModal);
-    document.getElementById('mClose2').addEventListener('click', closeModal);
-  });
-}
-
-/* ===================== 借還歷史紀錄 ===================== */
-let histFilter = {date:'', area:'', type:'', vendor:'', status:''};
-function renderHistory(){
-  const areaOpts = DB.areas.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
-  const vendorOpts = DB.vendors.map(v=>'<option value="'+v.id+'">'+escapeHtml(v.name)+'</option>').join('');
-
-  let list = DB.borrowRecords.slice();
-  const term = (globalSearchTerm||'').toLowerCase();
-  if(term){
-    list = list.filter(r=>{
-      const eq = DB.equipment.find(e=>e.id===r.equipmentId);
-      const hay = [
-        eq?eq.code:'', eq?areaName(eq.areaId):'', vendorName(r.vendorId,r.vendorOther), r.borrower, r.note
-      ].join(' ').toLowerCase();
-      return hay.includes(term);
-    });
-  }
-  if(histFilter.date) list = list.filter(r=>r.date===histFilter.date);
-  if(histFilter.area) list = list.filter(r=>{ const eq=DB.equipment.find(e=>e.id===r.equipmentId); return eq && eq.areaId===histFilter.area; });
-  if(histFilter.type) list = list.filter(r=>{ const eq=DB.equipment.find(e=>e.id===r.equipmentId); return eq && eq.type===histFilter.type; });
-  if(histFilter.vendor) list = list.filter(r=>r.vendorId===histFilter.vendor);
-  if(histFilter.status) list = list.filter(r=>r.status===histFilter.status);
-
-  list.sort((a,b)=> (b.borrowTs||0)-(a.borrowTs||0));
-
-  return `
-  <div class="panel">
-    <div class="panel-head">
-      <h2>借還歷史紀錄（共 ${list.length} 筆${term? '，搜尋："'+escapeHtml(globalSearchTerm)+'"':''}）</h2>
-      <div class="no-print" style="display:flex;gap:8px;">
-        <button class="btn" id="btnPrint">🖨 列印</button>
-        <button class="btn btn-primary" id="btnExportCsv">⬇ 匯出 CSV</button>
-      </div>
-    </div>
-    <div class="panel-body">
-      <div class="toolbar no-print">
-        <input type="date" id="hDate" value="${histFilter.date}">
-        <select id="hArea"><option value="">全部區域</option>${areaOpts}</select>
-        <select id="hType"><option value="">全部類型</option><option value="磁扣">磁扣</option><option value="工程卡">工程卡</option><option value="其他">其他</option></select>
-        <select id="hVendor"><option value="">全部廠商</option>${vendorOpts}</select>
-        <select id="hStatus">
-          <option value="">全部狀態</option>
-          <option value="借出中">借出中</option>
-          <option value="逾期未還">逾期未還</option>
-          <option value="已歸還">已歸還</option>
-          <option value="損壞">損壞</option>
-          <option value="故障">故障</option>
-          <option value="遺失">遺失</option>
-        </select>
-        <button class="btn" id="btnClearFilter">清除篩選</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th>日期</th><th>設備編號</th><th>設備類型</th><th>門禁區域</th><th>借用廠商</th><th>借用人</th>
-            <th>借用時間</th><th>預計歸還</th><th>歸還時間</th><th>狀態</th><th>備註</th>
-          </tr></thead>
-          <tbody>
-          ${list.length? list.map(r=>{
-            const eq = DB.equipment.find(e=>e.id===r.equipmentId);
-            return `<tr>
-              <td>${r.date}</td>
-              <td><strong>${eq?escapeHtml(eq.code):'-'}</strong></td>
-              <td>${eq?escapeHtml(eq.type):'-'}</td>
-              <td>${eq?escapeHtml(areaName(eq.areaId)):'-'}</td>
-              <td>${escapeHtml(vendorName(r.vendorId,r.vendorOther))}</td>
-              <td>${escapeHtml(r.borrower)}</td>
-              <td>${r.borrowTime}</td>
-              <td>${r.expectedReturnDate? r.expectedReturnDate+' '+r.expectedReturnTime : '-'}</td>
-              <td>${r.returnDate? r.returnDate+' '+r.returnTime : '-'}</td>
-              <td>${statusBadge(r.status)}</td>
-              <td>${escapeHtml(r.note||'-')}</td>
-            </tr>`;
-          }).join('') : '<tr class="empty-row"><td colspan="11">找不到符合條件的紀錄</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>`;
-}
-function bindHistory(){
-  document.getElementById('hDate').value = histFilter.date;
-  document.getElementById('hDate').addEventListener('change', e=>{ histFilter.date=e.target.value; render(); });
-  document.getElementById('hArea').value = histFilter.area;
-  document.getElementById('hArea').addEventListener('change', e=>{ histFilter.area=e.target.value; render(); });
-  document.getElementById('hType').value = histFilter.type;
-  document.getElementById('hType').addEventListener('change', e=>{ histFilter.type=e.target.value; render(); });
-  document.getElementById('hVendor').value = histFilter.vendor;
-  document.getElementById('hVendor').addEventListener('change', e=>{ histFilter.vendor=e.target.value; render(); });
-  document.getElementById('hStatus').value = histFilter.status;
-  document.getElementById('hStatus').addEventListener('change', e=>{ histFilter.status=e.target.value; render(); });
-  document.getElementById('btnClearFilter').addEventListener('click', ()=>{
-    histFilter = {date:'', area:'', type:'', vendor:'', status:''};
-    globalSearchTerm='';
-    document.getElementById('globalSearch').value='';
-    render();
-  });
-  document.getElementById('btnPrint').addEventListener('click', ()=> window.print());
-  document.getElementById('btnExportCsv').addEventListener('click', exportCsv);
-}
-function exportCsv(){
-  const headers = ['日期','設備編號','設備類型','門禁區域','借用廠商','借用人','借用時間','預計歸還','歸還時間','狀態','備註'];
-  const rows = DB.borrowRecords.map(r=>{
-    const eq = DB.equipment.find(e=>e.id===r.equipmentId);
-    return [
-      r.date, eq?eq.code:'', eq?eq.type:'', eq?areaName(eq.areaId):'',
-      vendorName(r.vendorId,r.vendorOther), r.borrower, r.borrowTime,
-      r.expectedReturnDate? r.expectedReturnDate+' '+r.expectedReturnTime : '',
-      r.returnDate? r.returnDate+' '+r.returnTime : '',
-      r.status, (r.note||'').replace(/\n/g,' ')
-    ];
-  });
-  let csv = '\uFEFF' + headers.join(',') + '\n';
-  rows.forEach(row=>{
-    csv += row.map(v=> '"'+String(v).replace(/"/g,'""')+'"').join(',') + '\n';
-  });
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = '門禁借還紀錄_'+nowDate()+'.csv';
-  document.body.appendChild(a); a.click(); a.remove();
-  toast('已匯出 CSV 檔案','ok');
-}
-
-/* ===================== 統計報表 ===================== */
-function renderReports(){
-  const vendorCounts = {};
-  DB.borrowRecords.forEach(r=>{
-    const name = vendorName(r.vendorId, r.vendorOther);
-    vendorCounts[name] = (vendorCounts[name]||0)+1;
-  });
-  const areaCounts = {};
-  DB.borrowRecords.forEach(r=>{
-    const eq = DB.equipment.find(e=>e.id===r.equipmentId);
-    if(!eq) return;
-    const name = areaName(eq.areaId);
-    areaCounts[name] = (areaCounts[name]||0)+1;
-  });
-  const equipCounts = {};
-  DB.borrowRecords.forEach(r=>{
-    const eq = DB.equipment.find(e=>e.id===r.equipmentId);
-    if(!eq) return;
-    equipCounts[eq.code] = (equipCounts[eq.code]||0)+1;
-  });
-  const lost = DB.borrowRecords.filter(r=>r.status==='遺失').length;
-  const broken = DB.borrowRecords.filter(r=>r.status==='損壞').length;
-  const fault = DB.borrowRecords.filter(r=>r.status==='故障').length;
-
-  function bars(obj, top){
-    const entries = Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0, top||8);
-    const max = entries.length? entries[0][1] : 1;
-    if(!entries.length) return '<div class="help">尚無資料</div>';
-    return entries.map(([k,v])=>`
-      <div class="bar-row">
-        <div class="name" title="${escapeHtml(k)}">${escapeHtml(k)}</div>
-        <div class="track"><div class="fill" style="width:${Math.round(v/max*100)}%"></div></div>
-        <div class="val">${v}</div>
-      </div>`).join('');
-  }
-
-  return `
-  <div class="panel">
-    <div class="panel-head"><h2>統計報表</h2></div>
-    <div class="panel-body">
-      <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:8px;">
-        <div class="stat-card s-overdue"><div class="bar"></div><div class="num">${lost}</div><div class="lbl">遺失件數</div></div>
-        <div class="stat-card s-out"><div class="bar"></div><div class="num">${broken}</div><div class="lbl">損壞件數</div></div>
-        <div class="stat-card s-outn"><div class="bar"></div><div class="num">${fault}</div><div class="lbl">故障件數</div></div>
-        <div class="stat-card s-total"><div class="bar"></div><div class="num">${DB.borrowRecords.length}</div><div class="lbl">累計借用次數</div></div>
-      </div>
-      <div class="stat-report">
-        <div class="report-block"><h3>各廠商借用次數</h3>${bars(vendorCounts)}</div>
-        <div class="report-block"><h3>各區域使用次數</h3>${bars(areaCounts)}</div>
-        <div class="report-block"><h3>設備使用率（前 10 名）</h3>${bars(equipCounts,10)}</div>
-      </div>
-    </div>
-  </div>`;
-}
-
-/* ===================== 系統設定 ===================== */
-function renderSettings(){
-  const s = DB.settings;
-  return `
-  <div class="panel">
-    <div class="panel-head"><h2>系統設定</h2></div>
-    <div class="panel-body">
-      <div class="form-grid">
-        <div class="field"><label>工地名稱</label><input type="text" id="sSite" value="${escapeHtml(s.siteName)}"></div>
-        <div class="field"><label>專案名稱</label><input type="text" id="sProj" value="${escapeHtml(s.projectName)}"></div>
-        <div class="field"><label>管理單位</label><input type="text" id="sUnit" value="${escapeHtml(s.manageUnit)}"></div>
-        <div class="field"><label>逾期判定時間（分鐘）</label><input type="number" id="sOverdue" value="${s.overdueMinutes}" min="0"></div>
-      </div>
-      <div style="margin-top:16px;"><button class="btn btn-primary" id="btnSaveSettings">儲存設定</button></div>
-    </div>
-  </div>
-
-  <div class="panel" style="margin-top:20px;">
-    <div class="panel-head"><h2>資料備份與還原</h2></div>
-    <div class="panel-body">
-      <div class="section-note">系統資料儲存於瀏覽器 LocalStorage，建議定期匯出備份，避免清除瀏覽器資料時遺失紀錄。</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn btn-primary" id="btnExportBackup">⬇ 匯出備份（JSON）</button>
-        <button class="btn" id="btnImportBackup">⬆ 匯入備份（JSON）</button>
-        <input type="file" id="fileImport" accept="application/json" style="display:none;">
-      </div>
-    </div>
-  </div>
-
-  <div class="panel" style="margin-top:20px;">
-    <div class="panel-head"><h2>系統資訊</h2></div>
-    <div class="panel-body">
-      <dl class="kv-grid">
-        <dt>設備總數</dt><dd>${DB.equipment.length}</dd>
-        <dt>區域總數</dt><dd>${DB.areas.length}</dd>
-        <dt>廠商總數</dt><dd>${DB.vendors.length}</dd>
-        <dt>借還紀錄</dt><dd>${DB.borrowRecords.length}</dd>
-        <dt>初始化時間</dt><dd>${DB.meta && DB.meta.initializedAt ? new Date(DB.meta.initializedAt).toLocaleString('zh-TW') : '-'}</dd>
-      </dl>
-    </div>
-  </div>`;
-}
-function bindSettings(){
-  document.getElementById('btnSaveSettings').addEventListener('click', ()=>{
-    DB.settings.siteName = document.getElementById('sSite').value.trim() || '未命名工地';
-    DB.settings.projectName = document.getElementById('sProj').value.trim();
-    DB.settings.manageUnit = document.getElementById('sUnit').value.trim();
-    DB.settings.overdueMinutes = parseInt(document.getElementById('sOverdue').value,10) || 0;
-    save();
-    applyHeaderLabels();
-    toast('設定已儲存','ok');
-  });
-  document.getElementById('btnExportBackup').addEventListener('click', ()=>{
-    const blob = new Blob([JSON.stringify(DB,null,2)], {type:'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = '門禁系統備份_'+nowDate()+'.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    toast('已匯出備份檔','ok');
-  });
-  const fileInput = document.getElementById('fileImport');
-  document.getElementById('btnImportBackup').addEventListener('click', ()=> fileInput.click());
-  fileInput.addEventListener('change', (e)=>{
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt)=>{
-      try{
-        const incoming = JSON.parse(evt.target.result);
-        if(!incoming.equipment || !incoming.areas || !incoming.borrowRecords){
-          toast('備份檔格式不正確','err'); return;
-        }
-        mergeImport(incoming);
-        toast('備份資料已匯入（已避免重複）','ok');
-        render();
-      }catch(err){
-        toast('讀取備份檔失敗：'+err.message,'err');
-      }
-      fileInput.value='';
-    };
-    reader.readAsText(file);
-  });
-}
-function mergeImport(incoming){
-  // merge by unique key to avoid duplicates: equipment by code, areas by code, vendors by name, borrowRecords by id
-  const existingEqCodes = new Set(DB.equipment.map(e=>e.code));
-  (incoming.equipment||[]).forEach(e=>{
-    if(!existingEqCodes.has(e.code)){ DB.equipment.push(e); existingEqCodes.add(e.code); }
-  });
-  const existingAreaCodes = new Set(DB.areas.map(a=>a.code));
-  (incoming.areas||[]).forEach(a=>{
-    if(!existingAreaCodes.has(a.code)){ DB.areas.push(a); existingAreaCodes.add(a.code); }
-  });
-  const existingVendorNames = new Set(DB.vendors.map(v=>v.name));
-  (incoming.vendors||[]).forEach(v=>{
-    if(!existingVendorNames.has(v.name)){ DB.vendors.push(v); existingVendorNames.add(v.name); }
-  });
-  const existingRecIds = new Set(DB.borrowRecords.map(r=>r.id));
-  (incoming.borrowRecords||[]).forEach(r=>{
-    if(!existingRecIds.has(r.id)){ DB.borrowRecords.push(r); existingRecIds.add(r.id); }
-  });
-  save();
-}
-
-/* ===================== 標頭套用設定 ===================== */
-function applyHeaderLabels(){
-  document.getElementById('cfgSiteName').textContent = DB.settings.siteName || '未命名工地';
-  document.getElementById('cfgProjName').textContent = (DB.settings.projectName||'') + (DB.settings.projectName?'・':'') + '驗屋階段';
-}
-
-/* ===================== 逾期輪詢 ===================== */
-setInterval(()=>{
-  syncOverdue();
-  if(currentPage==='dashboard' || currentPage==='current'){ render(); }
-}, 60000);
-
-/* ===================== 事件委派：panel-head 上的新增鈕已個別綁定 ===================== */
-
-/* ===================== 初始化 ===================== */
-applyHeaderLabels();
-navigate('dashboard');
-
-})();
-</script>
-</body>
-</html>
+function relTxt(r){const a=esc(cn(r.a)),b=esc(cn(r.b));return r.rel==="父母"?`${a} 是 ${b} 的父母`:`${a} 與 ${b} 是${r.rel}`}
+function fam(){return `<div class="row"><h1>家庭</h1><button class="pri" onclick="fh()">新增家庭</button></div><div class="mu">家庭由你自行建立，系統不會依姓氏、地址或電話自動推定。</div>`+(S.h.length?S.h.map(h=>{const m=S.c.filter(c=>c.hid===h.id),ids=m.map(c=>c.id),ps=S.p.filter(p=>(ids.includes(p.cid)||(p.ins||[]).some(i=>ids.includes(i)))&&LIVE.includes(p.status)),fee=ps.reduce((s,p)=>s+(Number(p.fee)||0),0),nx=ps.filter(p=>p.end).map(p=>dl(p.end)).sort((a,b)=>a-b)[0];
+ return `<div class="card"><div class="row"><b>${esc(h.name)}</b><span class="tag">${m.length} 位成員</span></div>
+ <div class="mu">${m.length?m.map(c=>esc(c.name)).join("、"):"尚無成員"}</div>
+ <div class="mu">有效保單 ${ps.length} 張　保費合計 NT$ ${fee.toLocaleString("zh-TW")}${nx!==undefined?"　最近到期："+(nx<0?"已逾期":nx+" 天後"):""}</div>
+ ${S.r.filter(r=>r.hid===h.id).map(r=>`<div class="row" style="padding:2px 0"><span class="mu">${relTxt(r)}</span><button class="sm dg" onclick="delR('${r.id}')">移除</button></div>`).join("")}
+ <div style="margin-top:8px"><button class="sm" onclick="fh('${h.id}')">編輯家庭</button> <button class="sm" onclick="fr('${h.id}')">設定關係</button> <button class="sm dg" onclick="delH('${h.id}')">${armed==="h"+h.id?"再按一次刪除":"刪除"}</button></div></div>`}).join(""):`<div class="empty">還沒有家庭，先新增一個家庭並選擇成員</div>`)}
+function fh(id){const h=S.h.find(x=>x.id===id)||{};if(!S.c.length)return toast("請先新增客戶");
+ sheet(`<h1>${id?"編輯家庭":"新增家庭"}</h1><label>家庭名稱（必填）</label><input id="hn" value="${esc(h.name)}" placeholder="例如：王家">
+ <label>成員（一位客戶只能屬於一個家庭；移出成員時，相關關係會一併移除）</label>${S.c.map(c=>{const o=c.hid&&c.hid!==id;return `<label style="display:flex;gap:8px;align-items:center;color:var(--tx);margin:4px 0"><input type="checkbox" class="mb" value="${c.id}" style="width:auto;min-height:0" ${c.hid===id?"checked":""} ${o?"disabled":""}>${esc(c.name)}${o?`<span class="mu">（已在「${esc((S.h.find(x=>x.id===c.hid)||{}).name)}」）</span>`:""}</label>`}).join("")}
+ <div class="err" id="e"></div><div class="row"><button onclick="closeS()">取消</button><button class="pri" onclick="sh('${id||""}')">儲存家庭</button></div>`)}
+function sh(id){const n=v("hn"),e=document.getElementById("e");if(!n)return e.textContent="請填寫家庭名稱";
+ const sel=[...document.querySelectorAll(".mb:checked")].map(x=>x.value);let h=S.h.find(x=>x.id===id);if(!h){h={id:uid(),name:n};S.h.push(h)}h.name=n;
+ S.c.forEach(c=>{if(c.hid===h.id&&!sel.includes(c.id))c.hid=undefined;if(sel.includes(c.id))c.hid=h.id});
+ S.r=S.r.filter(r=>r.hid!==h.id||(sel.includes(r.a)&&sel.includes(r.b)));save();closeS();toast("家庭已儲存");draw()}
+const RO=[["","無（不設定）"],["配偶","配偶"],["父母","父母"],["子女","子女"],["兄弟姊妹","兄弟姊妹"],["其他親屬","其他親屬"]];
+function cur(hid,a,b){const r=S.r.find(r=>r.hid===hid&&((r.a===a&&r.b===b)||(r.a===b&&r.b===a)));if(!r)return"";if(r.rel!=="父母")return r.rel;return r.a===b?"父母":"子女"}
+function fr(hid,aid){const m=S.c.filter(c=>c.hid===hid);if(m.length<2)return toast("家庭至少要有 2 位成員才能設定關係");const a=(m.find(c=>c.id===aid)||m[0]).id,an=esc(cn(a));
+ sheet(`<h1>設定家庭關係</h1><label>以哪位成員為準</label><select id="ra" onchange="fr('${hid}',this.value)">${m.map(c=>`<option value="${c.id}" ${c.id===a?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+ <div class="mu" style="margin-top:8px">請為其餘每位成員選擇：他／她是「${an}」的什麼人。沒有關係就保持「無」。切換上方成員會放棄尚未儲存的選擇。</div>
+ ${m.filter(c=>c.id!==a).map(c=>`<label>${esc(c.name)} 是 ${an} 的</label><select class="rs" data-b="${c.id}">${RO.map(([k,l])=>`<option value="${k}" ${k===cur(hid,a,c.id)?"selected":""}>${l}</option>`).join("")}</select>`).join("")}
+ <div class="err" id="e"></div><div class="row"><button onclick="closeS()">取消</button><button class="pri" onclick="sr('${hid}')">儲存關係</button></div>`)}
+function sr(hid){const a=v("ra");document.querySelectorAll(".rs").forEach(s=>{const b=s.dataset.b,x=s.value;
+ S.r=S.r.filter(r=>!(r.hid===hid&&((r.a===a&&r.b===b)||(r.a===b&&r.b===a))));
+ if(x==="父母")S.r.push({id:uid(),hid,a:b,b:a,rel:"父母"});else if(x==="子女")S.r.push({id:uid(),hid,a,b,rel:"父母"});else if(x)S.r.push({id:uid(),hid,a,b,rel:x})});
+ save();closeS();toast("家庭關係已儲存");draw()}
+function delR(id){S.r=S.r.filter(r=>r.id!==id);save();toast("關係已移除");draw()}
+function delH(id){if(armed==="h"+id){S.c.forEach(c=>{if(c.hid===id)c.hid=undefined});S.r=S.r.filter(r=>r.hid!==id);S.h=S.h.filter(h=>h.id!==id);armed=null;save();toast("家庭已刪除，客戶與保單不受影響");draw()}else{armed="h"+id;draw();setTimeout(()=>{if(armed==="h"+id){armed=null;draw()}},4000)}}
+const YST=["待收","已持有","已提示","已兌現","退票","作廢"],KST=["未刷卡","待授權","已授權","失敗"],KME=["一次付清","分期","自動扣款","其他"],KBR=["VISA","MasterCard","JCB","銀聯","其他"],CARD=/(?:\d[ -]?){13,19}/;
+const alsum=y=>(y.alloc||[]).reduce((s,a)=>s+(Number(a.amt)||0),0),money=n=>"NT$ "+Number(n||0).toLocaleString("zh-TW");
+function more(){const L=[["h","家庭","家庭群組與關係"],["l","聯絡","聯絡紀錄"],["o","機會","業務機會"],["y","付款","支票與信用卡（遮罩）"],["b","備份與匯入","備份、還原、Excel 匯入、CSV 匯出"],["s","設定","險種管理"]];
+ return `<h1>更多</h1>`+L.map(([k,n,d])=>`<button class="card row" style="width:100%;text-align:left" onclick="go('${k}')"><span><b>${n}</b><br><span class="mu">${d}</span></span><span class="mu">›</span></button>`).join("")}
+function pays(){const ym=new Date().toLocaleDateString("sv").slice(0,7);
+ return `<h1>付款資料</h1><div class="mu">信用卡只保存遮罩資料；系統不儲存完整卡號、安全碼或密碼。</div>
+ <div class="row"><h2>支票</h2><button class="pri sm" onclick="fy()">新增支票</button></div>`+
+ (S.y.length?S.y.slice().sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999")).map(y=>{const un=Number(y.amount||0)-alsum(y);return `<div class="card"><div class="row"><b>${esc(cn(y.cid))}</b><span class="tag ${y.status==="退票"?"d":y.status==="已兌現"?"":"w"}">${esc(y.status)}</span></div>
+ <div class="mu">${money(y.amount)}　到期 ${fd(y.due)||"未填"}${y.issue?"　開票 "+fd(y.issue):""}</div>
+ <div class="mu">開票人 ${esc(y.drawer||"—")}　付款人 ${esc(y.payer||"—")}　持有人 ${esc(y.holder||"—")}${y.related?"　關係人 "+esc(y.related):""}</div>
+ ${(y.alloc||[]).filter(a=>Number(a.amt)>0).map(a=>{const p=S.p.find(x=>x.id===a.pid);return `<div class="mu">分配：${p?esc(p.type)+" "+esc(p.no):"（保單已刪除）"} ${money(a.amt)}</div>`}).join("")}
+ <div class="mu">${un===0?"已全數分配":un>0?"未分配 "+money(un):""}</div>${y.note?`<div class="mu">${esc(y.note)}</div>`:""}
+ <div style="margin-top:8px"><button class="sm" onclick="fy('${y.id}')">編輯</button> <button class="sm dg" onclick="del('y','${y.id}')">${armed==="y"+y.id?"再按一次刪除":"刪除"}</button></div></div>`}).join(""):`<div class="empty">還沒有支票紀錄</div>`)+
+ `<div class="row"><h2>信用卡（遮罩）</h2><button class="pri sm" onclick="fk()">新增信用卡</button></div>`+
+ (S.k.length?S.k.map(k=>{const ex=k.exp&&k.exp<ym;return `<div class="card"><div class="row"><b>${esc(cn(k.cid))}</b><span class="tag ${ex?"d":""}">${ex?"已過期":"未過期"}</span></div>
+ <div class="mu">${esc(k.bank)} ${esc(k.brand)}　＊＊＊＊ ${esc(k.last4)}　到期 ${esc((k.exp||"").replace("-","/"))||"未填"}</div>
+ <div class="mu">持卡人 ${esc(k.holder||"—")}　${esc(k.method)}　${esc(k.status)}</div>${k.note?`<div class="mu">${esc(k.note)}</div>`:""}
+ <div style="margin-top:8px"><button class="sm" onclick="fk('${k.id}')">編輯</button> <button class="sm dg" onclick="del('k','${k.id}')">${armed==="k"+k.id?"再按一次刪除":"刪除"}</button></div></div>`}).join(""):`<div class="empty">還沒有信用卡資料</div>`)}
+function fy(id){if(!S.c.length)return toast("請先新增客戶");const y=S.y.find(x=>x.id===id)||{cid:S.c[0].id,status:"待收"};
+ sheet(`<h1>${id?"編輯支票":"新增支票"}</h1><label>關聯客戶（必填）</label><select id="yc" onchange="yal([])">${S.c.map(c=>`<option value="${c.id}" ${c.id===y.cid?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+ <label>支票開票人</label><input id="yd" value="${esc(y.drawer)}"><label>支票付款人</label><input id="yp" value="${esc(y.payer)}">
+ <label>支票持有人</label><input id="yh" value="${esc(y.holder)}"><label>支票關係人</label><input id="yr" value="${esc(y.related)}">
+ <label>開票日期</label><input id="yi" type="date" value="${esc(y.issue)}"><label>票據到期日</label><input id="yu" type="date" value="${esc(y.due)}">
+ <label>金額（新臺幣，必填）</label><input id="ya" inputmode="numeric" value="${esc(y.amount)}">
+ <label>付款狀態</label><select id="ys">${opt(YST,y.status)}</select>
+ <h2>分配到保單</h2><div class="mu">填寫每張保單分到的金額，合計不可超過支票金額，避免重複計算。</div><div id="yal"></div>
+ <label>備註</label><textarea id="yn" rows="2">${esc(y.note)}</textarea>
+ <div class="err" id="e"></div><div class="row"><button onclick="closeS()">取消</button><button class="pri" onclick="sy('${id||""}')">儲存支票</button></div>`);yal(y.alloc||[])}
+function yal(al){const c=v("yc"),ps=S.p.filter(p=>p.cid===c||(p.ins||[]).includes(c));
+ document.getElementById("yal").innerHTML=ps.length?ps.map(p=>{const f=al.find(a=>a.pid===p.id);return `<label>${esc(p.type)} ${esc(p.no)}　分配金額</label><input class="ay" data-p="${p.id}" inputmode="numeric" value="${f?esc(f.amt):""}">`}).join(""):`<div class="mu">此客戶尚無保單可分配</div>`}
+function sy(id){const o={cid:v("yc"),drawer:v("yd"),payer:v("yp"),holder:v("yh"),related:v("yr"),issue:v("yi"),due:v("yu"),amount:v("ya").replace(/,/g,""),status:v("ys"),note:v("yn"),alloc:[]},e=document.getElementById("e");
+ if(!/^\d+$/.test(o.amount))return e.textContent="請輸入整數金額";
+ if(o.issue&&o.due&&o.due<o.issue)return e.textContent="票據到期日不能早於開票日期";
+ for(const i of document.querySelectorAll(".ay")){const t=i.value.trim().replace(/,/g,"");if(!t)continue;if(!/^\d+$/.test(t))return e.textContent="分配金額請輸入整數";o.alloc.push({pid:i.dataset.p,amt:t})}
+ const sum=alsum(o);if(sum>Number(o.amount))return e.textContent=`分配合計 ${money(sum)} 超過支票金額 ${money(o.amount)}`;
+ if(id)Object.assign(S.y.find(x=>x.id===id),o);else S.y.push({id:uid(),...o});save();closeS();toast("支票已儲存");draw()}
+function fk(id){if(!S.c.length)return toast("請先新增客戶");const k=S.k.find(x=>x.id===id)||{cid:S.c[0].id,brand:"VISA",method:"一次付清",status:"未刷卡"};
+ sheet(`<h1>${id?"編輯信用卡":"新增信用卡"}</h1><div class="note">請勿在任何欄位輸入完整卡號、安全碼（CVV）或密碼。</div>
+ <label>關聯客戶（必填）</label><select id="kc">${S.c.map(c=>`<option value="${c.id}" ${c.id===k.cid?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+ <label>持卡人姓名</label><input id="kh" value="${esc(k.holder)}"><label>發卡銀行</label><input id="kb" value="${esc(k.bank)}">
+ <label>卡別</label><select id="kr">${opt(KBR,k.brand)}</select>
+ <label>到期年月</label><input id="ke" type="month" value="${esc(k.exp)}">
+ <label>卡號末四碼（必填）</label><input id="kl" maxlength="4" inputmode="numeric" value="${esc(k.last4)}">
+ <label>付款方式</label><select id="km">${opt(KME,k.method)}</select><label>刷卡狀態</label><select id="ks">${opt(KST,k.status)}</select>
+ <label>備註</label><textarea id="kn" rows="2">${esc(k.note)}</textarea>
+ <div class="err" id="e"></div><div class="row"><button onclick="closeS()">取消</button><button class="pri" onclick="sk('${id||""}')">儲存</button></div>`)}
+function sk(id){const o={cid:v("kc"),holder:v("kh"),bank:v("kb"),brand:v("kr"),exp:v("ke"),last4:v("kl"),method:v("km"),status:v("ks"),note:v("kn")},e=document.getElementById("e");
+ if(!/^\d{4}$/.test(o.last4))return e.textContent="請輸入 4 碼數字的卡號末四碼";
+ if([o.holder,o.bank,o.note].some(s=>CARD.test(s)))return e.textContent="偵測到疑似完整卡號，系統不儲存完整卡號，請刪除後再儲存";
+ if(id)Object.assign(S.k.find(x=>x.id===id),o);else S.k.push({id:uid(),...o});save();closeS();toast("信用卡資料已儲存");draw()}
+const FIELDS=[["name","姓名"],["idno","身分證字號"],["birth","出生年月日"],["phone","手機"],["note","其他備註"]],SENS=/卡號|信用卡|cvv|cvc|安全碼|密碼|pin/i;
+let IM={step:1},RS=null,XF=false;
+const nowS=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16).replace("T"," ");
+function aud(a){S.a.push({at:nowS(),act:a});S.a=S.a.slice(-100);save()}
+async function saveFile(name,data){try{const d=typeof claude!=="undefined"?await claude.use("downloads"):null;if(!d){toast("目前環境不支援下載");return false}await d.save({filename:name,data});toast("檔案已儲存");return true}catch(e){if(!(e&&e.code==="declined"))toast("下載失敗："+((e&&e.code)||"未知錯誤"));return false}}
+async function doBackup(){const j=JSON.stringify({app:"crm-prototype",ver:1,at:nowS(),types:TYPES,data:{c:S.c,p:S.p,h:S.h,r:S.r,l:S.l,o:S.o,y:S.y,k:S.k,b:S.b,a:S.a}},null,1);if(await saveFile("crm-backup-"+nowS().slice(0,10).replaceAll("-","")+".json",j))aud("下載備份")}
+function pickRestore(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(j.app!=="crm-prototype"||!j.data)throw 0;const d={};["c","p","h","r","l","o","y","k","b","a"].forEach(x=>{d[x]=Array.isArray(j.data[x])?j.data[x]:[]});RS={d,types:Array.isArray(j.types)?j.types.filter(t=>typeof t==="string"):null,at:j.at};armed=null;draw()}catch(e){RS=null;toast("這不是有效的備份檔")}};r.readAsText(f)}
+function doRestore(){if(armed!=="rs"){armed="rs";draw();setTimeout(()=>{if(armed==="rs"){armed=null;draw()}},5000);return}
+ Object.assign(S,RS.d);if(RS.types)TYPES=RS.types;saveT();RS=null;armed=null;aud("還原備份");draw();toast("已還原備份")}
+const cs=x=>{let s=String(x??"");if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
+async function exCSV(kind){if(kind==="c"&&XF&&armed!=="xf"){armed="xf";draw();setTimeout(()=>{if(armed==="xf"){armed=null;draw()}},5000);return toast("再按一次，確認匯出完整身分證")}
+ const rows=kind==="c"?[["序號","姓名","身分證字號","出生年月日","手機","備註"],...S.c.map((c,i)=>[i+1,c.name,XF?c.idno:mask(c.idno),fd(c.birth),c.phone,c.note])]:[["要保人","被保險人","險種","保險公司","保單號碼","起保日期","到期日期","保費","狀態"],...S.p.map(p=>[cn(p.cid),((p.ins&&p.ins.length)?p.ins:[p.cid]).map(cn).join("、"),p.type,p.co,p.no,fd(p.start),fd(p.end),p.fee,p.status])];
+ const ok=await saveFile((kind==="c"?"customers":"policies")+".csv","\uFEFF"+rows.map(r=>r.map(cs).join(",")).join("\r\n"));if(ok)aud((kind==="c"?"匯出客戶":"匯出保單")+(kind==="c"&&XF?"（含完整身分證）":"（遮罩）"));armed=null;draw()}
+function normD(v){if(v===""||v==null)return"";const f=(y,m,d)=>{if(y<200)y+=1911;const t=new Date(y,m-1,d);return t.getFullYear()===y&&t.getMonth()===m-1&&t.getDate()===d&&y>=1900&&t<=new Date()?`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`:""};
+ if(v instanceof Date){const x=new Date(v.getTime()+43200000);return f(x.getFullYear(),x.getMonth()+1,x.getDate())}
+ if(typeof v==="number"){const p=XLSX.SSF.parse_date_code(v);return p?f(p.y,p.m,p.d):""}
+ const m=String(v).trim().match(/^(\d{2,4})\s*[\/.\-年]\s*(\d{1,2})\s*[\/.\-月]\s*(\d{1,2})/);return m?f(+m[1],+m[2],+m[3]):""}
+function cell(v){return v instanceof Date?normD(v):String(v??"").trim()}
+function autoMap(h){const re={name:/姓名|^客戶$/,idno:/身分證|身份證/,birth:/生日|出生/,phone:/手機|電話|行動/,note:/備註/},m={};for(const k in re){m[k]=h.findIndex(x=>re[k].test(x)&&!SENS.test(x))}return m}
+function xlPick(f){if(!f)return;if(typeof XLSX==="undefined")return toast("Excel 元件載入失敗，請檢查網路後重新整理");const r=new FileReader();r.onload=()=>{try{const wb=XLSX.read(new Uint8Array(r.result),{type:"array",cellDates:true});IM={step:2,wb,sheets:wb.SheetNames};draw()}catch(e){toast("無法讀取此檔案")}};r.readAsArrayBuffer(f)}
+function xlSheet(n){const rows=XLSX.utils.sheet_to_json(IM.wb.Sheets[n],{header:1,raw:true,defval:""}).filter(r=>r.some(c=>String(c).trim()!==""));if(rows.length<2)return toast("此工作表沒有資料列");
+ IM.sheet=n;IM.hdr=rows[0].map((h,i)=>String(h||"欄位"+(i+1)).trim());IM.rows=rows.slice(1);IM.map=autoMap(IM.hdr);IM.step=3;IM.wb=null;draw()}
+function xlCheck(){const m=IM.map,e=document.getElementById("e");if(m.name<0)return e.textContent="請先對應「姓名」欄位";
+ const seen=new Map(),P=[];let warn=0;
+ IM.rows.forEach((r,i)=>{const g=k=>m[k]>=0?r[m[k]]:"",o={name:cell(g("name")),idno:cell(g("idno")).toUpperCase().replace(/\s/g,""),birth:normD(g("birth")),phone:cell(g("phone")),note:cell(g("note"))},errs=[];
+  if(g("birth")!==""&&!o.birth)errs.push("出生年月日格式不正確");
+  if(/^9\d{8}$/.test(o.phone))o.phone="0"+o.phone;
+  ["name","phone","note"].forEach(k=>{if(CARD.test(o[k])){o[k]="";warn++}});
+  if(!o.name)errs.push("姓名空白");
+  if(o.idno&&!/^[A-Z][12]\d{8}$/.test(o.idno))errs.push("身分證字號格式不正確");
+  if(o.idno&&seen.has(o.idno))errs.push("與檔案第 "+seen.get(o.idno)+" 列的身分證字號重複");else if(o.idno)seen.set(o.idno,i+2);
+  const ex=o.idno?S.c.find(c=>c.idno===o.idno):null;let kind="add",act="add",diffs=[];
+  if(errs.length){kind="fail";act="skip"}
+  else if(ex){kind="upd";act="skip";[["name","姓名"],["birth","出生年月日"],["phone","手機"],["note","備註"]].forEach(([k,l])=>{if(o[k]&&o[k]!==(ex[k]||""))diffs.push({k,l,ov:ex[k]||"",nv:o[k]})})}
+  else if(S.c.some(c=>c.name===o.name)){kind="nm";act="skip"}
+  P.push({n:i+2,o,kind,act,errs,diffs,exId:ex&&ex.id})});
+ IM.plan=P;IM.warn=warn;IM.step=4;armed=null;draw()}
+function xlCommit(){if(armed!=="xi"){armed="xi";draw();setTimeout(()=>{if(armed==="xi"){armed=null;draw()}},5000);return}
+ const nc=S.c.map(c=>({...c}));let ad=0,up=0,sk=0,fl=0;
+ IM.plan.forEach(p=>{if(p.kind==="fail"){fl++;return}if(p.act==="skip"){sk++;return}
+  if(p.act==="update"){const c=nc.find(x=>x.id===p.exId);if(c){p.diffs.forEach(d=>{c[d.k]=d.nv});up++}else fl++}
+  else if(p.act==="add"){nc.push({id:uid(),...p.o});ad++}});
+ S.c=nc;S.b.push({id:uid(),at:nowS(),sheet:IM.sheet,ad,up,sk,fl});aud(`Excel 匯入：新增 ${ad}、更新 ${up}、跳過 ${sk}、失敗 ${fl}`);
+ IM={step:5,rep:{ad,up,sk,fl,warn:IM.warn}};armed=null;draw()}
+function imp(){const s=IM.step;
+ if(s===1)return `<div class="mu">支援 .xlsx、.csv（UTF-8）。雛形目前匯入客戶的姓名、身分證字號、出生年月日、手機與備註；檔案只在這支手機上處理，不會上傳。</div><input type="file" accept=".xlsx,.xls,.csv" onchange="xlPick(this.files[0])" style="margin-top:8px">`;
+ if(s===2)return `<b>第二步：選擇工作表</b>${IM.sheets.map(n=>`<button style="display:block;width:100%;margin-top:8px;text-align:left" onclick="xlSheet(this.dataset.n)" data-n="${esc(n)}">${esc(n)}</button>`).join("")}<button style="margin-top:8px" onclick="IM={step:1};draw()">取消</button>`;
+ if(s===3){const sx=IM.hdr.map(h=>SENS.test(h)),opts=k=>`<option value="-1">不匯入</option>`+IM.hdr.map((h,i)=>sx[i]?"":`<option value="${i}" ${IM.map[k]===i?"selected":""}>${esc(h)}</option>`).join("");
+  return `<b>第三步：預覽與欄位對應</b><div class="mu">工作表「${esc(IM.sheet)}」，共 ${IM.rows.length} 列</div>${sx.some(x=>x)?`<div class="note">已自動排除含卡號、安全碼或密碼的欄位，這些欄位不會被讀入。</div>`:""}
+ <div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px"><tr>${IM.hdr.map(h=>`<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--bd)">${esc(h)}</th>`).join("")}</tr>${IM.rows.slice(0,5).map(r=>`<tr>${IM.hdr.map((h,i)=>`<td style="padding:4px 8px;border-bottom:1px solid var(--bd)">${sx[i]?"（已排除）":i===IM.map.idno?esc(mask(cell(r[i]).toUpperCase())):esc(cell(r[i]).slice(0,20))}</td>`).join("")}</tr>`).join("")}</table></div>
+ ${FIELDS.map(([k,l])=>`<label>${l}${k==="name"?"（必對應）":""}</label><select onchange="IM.map['${k}']=+this.value">${opts(k)}</select>`).join("")}
+ <div class="err" id="e"></div><div class="row" style="margin-top:8px"><button onclick="IM={step:1};draw()">取消</button><button class="pri" onclick="xlCheck()">檢查資料</button></div>`}
+ if(s===4){const P=IM.plan,c=k=>P.filter(p=>p.kind===k).length,TG={add:"新增",upd:"身分證相同",nm:"同名待確認",fail:"失敗"};
+  return `<b>第四步：檢查結果</b><div class="mu">新增 ${c("add")}、身分證相同 ${c("upd")}、同名待確認 ${c("nm")}、失敗 ${c("fail")}${IM.warn?`、已移除疑似卡號內容 ${IM.warn} 處`:""}。不會默默覆寫，相同或同名的資料預設跳過，請自行選擇。失敗的列不會匯入，錯誤說明不含身分證字號。</div>
+ ${P.slice(0,100).map((p,i)=>`<div class="card"><div class="row"><b>第 ${p.n} 列　${esc(p.o.name||"（無姓名）")}</b><span class="tag ${p.kind==="fail"?"d":p.kind==="add"?"":"w"}">${TG[p.kind]}</span></div>
+ ${p.errs.length?`<div class="mu" style="color:var(--dn)">${esc(p.errs.join("；"))}</div>`:""}${p.kind==="upd"&&!p.diffs.length?`<div class="mu">資料與現有客戶完全相同</div>`:""}
+ ${p.diffs.map(d=>`<div class="mu">${d.l}：${esc(d.ov||"（空）")} → ${esc(d.nv)}</div>`).join("")}
+ ${p.kind!=="fail"?`<select onchange="IM.plan[${i}].act=this.value" style="margin-top:6px">${(p.kind==="upd"?[["skip","跳過"],["update","更新（覆寫上列欄位）"]]:p.kind==="nm"?[["skip","跳過"],["add","新增為新客戶"]]:[["add","新增"],["skip","跳過"]]).map(([x,l])=>`<option value="${x}" ${p.act===x?"selected":""}>${l}</option>`).join("")}</select>`:""}</div>`).join("")}
+ ${P.length>100?`<div class="mu">僅顯示前 100 列，其餘列沿用預設動作。</div>`:""}
+ <div class="row" style="margin-top:8px"><button onclick="IM={step:1};armed=null;draw()">取消匯入</button><button class="pri" onclick="xlCommit()">${armed==="xi"?"再按一次確認匯入":"確認匯入"}</button></div>`}
+ const r=IM.rep;return `<b>匯入完成</b><div class="mu">新增 ${r.ad}、更新 ${r.up}、跳過 ${r.sk}、失敗 ${r.fl}${r.warn?`；已移除疑似卡號內容 ${r.warn} 處`:""}</div><div class="mu">原始 Excel 內容已從記憶體清除，雛形不保存原始檔。</div><button class="pri" style="margin-top:8px" onclick="IM={step:1};draw()">完成</button>`}
+function bak(){return `<h1>備份與匯入</h1><div class="note">雛形的資料只存在這支手機的瀏覽器。請定期下載備份，清除瀏覽器資料會讓資料消失。</div>
+<h2>備份與還原</h2><div class="card"><button class="pri" onclick="doBackup()">下載 JSON 備份</button><div class="mu" style="margin-top:8px">還原會覆蓋目前所有資料。</div><label>選擇備份檔</label><input type="file" accept=".json,application/json" onchange="pickRestore(this.files[0])">
+${RS?`<div class="mu" style="margin-top:8px">備份時間 ${esc(RS.at||"未知")}：客戶 ${RS.d.c.length}、保單 ${RS.d.p.length}、家庭 ${RS.d.h.length}、聯絡 ${RS.d.l.length}、機會 ${RS.d.o.length}</div><button class="dg" style="margin-top:8px" onclick="doRestore()">${armed==="rs"?"再按一次確認覆蓋":"還原此備份"}</button>`:""}</div>
+<h2>匯出 CSV</h2><div class="card"><label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input type="checkbox" style="width:auto;min-height:0" ${XF?"checked":""} onchange="XF=this.checked;armed=null">匯出完整身分證（預設遮罩）</label><div style="margin-top:8px"><button onclick="exCSV('c')">${armed==="xf"?"再按一次確認匯出":"匯出客戶"}</button> <button onclick="exCSV('p')">匯出保單</button></div><div class="mu" style="margin-top:8px">以 = + - @ 開頭的內容會自動加上前綴，防止 Excel 公式注入。</div></div>
+<h2>Excel 匯入客戶</h2><div class="card">${imp()}</div>
+<h2>操作紀錄</h2>${S.a.length?S.a.slice(-8).reverse().map(a=>`<div class="mu">${esc(a.at)}　${esc(a.act)}</div>`).join(""):`<div class="mu">尚無紀錄</div>`}`}
+const STAGES=["新機會","聯絡中","需求確認","報價中","等待客戶決定","待補件","已成交","未成交","暫緩追蹤"],CLOSED=["已成交","未成交"],OPENS=s=>!CLOSED.includes(s)&&s!=="暫緩追蹤";
+function odO(){return S.o.filter(o=>OPENS(o.stage)&&o.next&&dl(o.next)<0)}
+function opps(){const od=odO().length,r=S.o.slice().sort((a,b)=>(CLOSED.includes(a.stage)?1:0)-(CLOSED.includes(b.stage)?1:0)||(a.next||"9999").localeCompare(b.next||"9999"));
+ return `<div class="row"><h1>業務機會</h1><button class="pri" onclick="fo()">新增機會</button></div><div class="mu">業務機會與保單到期提醒分開管理；標為已成交不會自動建立保單。</div>${od?`<div class="note">有 ${od} 筆機會的下次聯絡日期已逾期</div>`:""}`+(r.length?r.map(o=>{const late=OPENS(o.stage)&&o.next&&dl(o.next)<0;return `<div class="card"><div class="row"><b>${esc(cn(o.cid))}</b><span class="tag ${o.stage==="已成交"?"":o.stage==="未成交"?"d":"w"}">${esc(o.stage)}</span></div>
+<div class="mu">${esc(o.type)}　預估保費 NT$ ${Number(o.fee||0).toLocaleString("zh-TW")}${o.prob?"　成交機率 "+esc(o.prob)+"%":""}</div>
+<div class="mu">${o.target?"預計日期 "+fd(o.target):""}${o.next?"　下次聯絡 "+fd(o.next):""}${late?`　<span class="tag d">逾期 ${-dl(o.next)} 天</span>`:""}</div>
+${o.stage==="已成交"&&o.result?`<div class="mu">成交結果：${esc(o.result)}</div>`:""}${o.stage==="未成交"&&o.reason?`<div class="mu">未成交原因：${esc(o.reason)}</div>`:""}${o.note?`<div class="mu">${esc(o.note)}</div>`:""}
+<div style="margin-top:8px"><button class="sm" onclick="fo('${o.id}')">編輯</button> <button class="sm dg" onclick="del('o','${o.id}')">${armed==="o"+o.id?"再按一次刪除":"刪除"}</button></div></div>`}).join(""):`<div class="empty">還沒有業務機會</div>`)}
+function fo(id){if(!S.c.length)return toast("請先新增客戶");if(!TYPES.length)return toast("請先到設定新增險種");const o=S.o.find(x=>x.id===id)||{type:TYPES[0],stage:"新機會"};
+ sheet(`<h1>${id?"編輯業務機會":"新增業務機會"}</h1><label>客戶（必填）</label><select id="oc">${S.c.map(c=>`<option value="${c.id}" ${c.id===o.cid?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+ <label>預計險種</label><select id="ot">${opt(TYPES.includes(o.type)?TYPES:[...TYPES,o.type],o.type)}</select>
+ <label>預計到期日或成交日</label><input id="od" type="date" value="${esc(o.target)}">
+ <label>預估保費（新臺幣）</label><input id="ofee" inputmode="numeric" value="${esc(o.fee)}">
+ <label>業務階段</label><select id="ost" onchange="og2()">${opt(STAGES,o.stage)}</select>
+ <label>下次聯絡日期</label><input id="onx" type="date" value="${esc(o.next)}">
+ <label>成交機率（選填，0 到 100）</label><input id="opr" inputmode="numeric" value="${esc(o.prob)}">
+ <div id="orw"><label>成交結果</label><input id="ore" value="${esc(o.result)}" placeholder="例如：實際保費、保單號碼"></div>
+ <div id="orsw"><label>未成交原因（必填）</label><input id="ors" value="${esc(o.reason)}"></div>
+ <label>備註</label><textarea id="onote" rows="2">${esc(o.note)}</textarea>
+ <div class="err" id="e"></div><div class="row"><button onclick="closeS()">取消</button><button class="pri" onclick="sob('${id||""}')">儲存機會</button></div>`);og2()}
+function og2(){const s=v("ost");document.getElementById("orw").style.display=s==="已成交"?"":"none";document.getElementById("orsw").style.display=s==="未成交"?"":"none"}
+function sob(id){const s=v("ost"),o={cid:v("oc"),type:v("ot"),target:v("od"),fee:v("ofee").replace(/,/g,""),stage:s,next:v("onx"),prob:v("opr"),result:s==="已成交"?v("ore"):"",reason:s==="未成交"?v("ors"):"",note:v("onote")},e=document.getElementById("e");
+ if(o.fee&&!/^\d+$/.test(o.fee))return e.textContent="預估保費請輸入整數數字";
+ if(o.prob!==""&&(!/^\d+$/.test(o.prob)||+o.prob>100))return e.textContent="成交機率請輸入 0 到 100 的整數";
+ if(s==="未成交"&&!o.reason)return e.textContent="未成交需填寫原因";
+ if(id)Object.assign(S.o.find(x=>x.id===id),o);else S.o.push({id:uid(),...o});save();closeS();toast("業務機會已儲存");draw()}
+const WAYS=["電話","LINE","Email","面談","其他"];
+function todoC(){return S.c.map(c=>{const l=S.l.filter(x=>x.cid===c.id).sort((a,b)=>b.at.localeCompare(a.at))[0];return l&&l.next?{c,l,n:dl(l.next)}:null}).filter(x=>x&&x.n<=0).sort((a,b)=>a.n-b.n)}
+const lcard=(l,a)=>{const p=S.p.find(x=>x.id===l.pid),ob=S.o.find(x=>x.id===l.oid);return `<div class="card"><div class="row"><b>${esc(cn(l.cid))}</b><span class="tag">${esc(l.way)}</span></div>
+<div class="mu">${fd(l.at.slice(0,10))} ${l.at.slice(11,16)}　${esc(l.topic)}</div>
+${l.content?`<div style="white-space:pre-wrap">${esc(l.content)}</div>`:""}${l.reply?`<div class="mu">客戶回覆：${esc(l.reply)}</div>`:""}${l.todo?`<div class="mu">待辦：${esc(l.todo)}</div>`:""}${l.next?`<div class="mu">下次聯絡：${fd(l.next)}</div>`:""}${p?`<div class="mu">關聯保單：${esc(p.type)} ${esc(p.no)}</div>`:""}${ob?`<div class="mu">關聯業務機會：${esc(ob.type)} ${esc(ob.stage)}</div>`:""}
+${a?`<div style="margin-top:8px"><button class="sm" onclick="fl('${l.id}')">編輯</button> <button class="sm dg" onclick="del('l','${l.id}')">${armed==="l"+l.id?"再按一次刪除":"刪除"}</button></div>`:""}</div>`};
+function homeExtra(){const td=todoC(),rc=S.l.slice().sort((a,b)=>b.at.localeCompare(a.at)).slice(0,3);
+ return `<h2>今日待聯絡客戶</h2><div class="mu">依每位客戶最新一筆紀錄的下次聯絡日期計算</div>${td.length?td.map(x=>`<div class="card"><div class="row"><b>${esc(x.c.name)}</b><span class="tag ${x.n<0?"d":"w"}">${x.n<0?"逾期 "+(-x.n)+" 天":"今天"}</span></div><div class="mu">${esc(x.l.todo||x.l.topic)}</div><div style="margin-top:6px"><button class="sm" onclick="fl('','${x.c.id}')">記錄聯絡</button></div></div>`).join(""):`<div class="empty">今天沒有待聯絡的客戶</div>`}
+<h2>近期聯絡紀錄</h2>${rc.length?rc.map(l=>lcard(l,false)).join(""):`<div class="empty">還沒有聯絡紀錄</div>`}`}
+function logs(){return `<div class="row"><h1>聯絡紀錄</h1><button class="pri" onclick="fl()">新增紀錄</button></div><input id="lq" placeholder="搜尋客戶、主題、內容" oninput="drawLogs()" style="margin:8px 0"><div id="ll"></div>`}
+function drawLogs(){const q=(document.getElementById("lq")||{}).value||"",el=document.getElementById("ll");if(!el)return;
+ const r=S.l.filter(l=>!q||cn(l.cid).includes(q)||(l.topic||"").includes(q)||(l.content||"").includes(q)).sort((a,b)=>b.at.localeCompare(a.at));
+ el.innerHTML=r.length?r.map(l=>lcard(l,true)).join(""):`<div class="empty">${S.l.length?"找不到符合的紀錄":"還沒有聯絡紀錄"}</div>`}
+function fl(id,cid){if(!S.c.length)return toast("請先新增客戶");const l=S.l.find(x=>x.id===id)||{cid:cid||S.c[0].id,at:new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16),way:"電話"};
+ sheet(`<h1>${id?"編輯聯絡紀錄":"新增聯絡紀錄"}</h1><label>客戶（必填）</label><select id="lc" onchange="lpo()">${S.c.map(c=>`<option value="${c.id}" ${c.id===l.cid?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+ <label>聯絡日期及時間</label><input id="la" type="datetime-local" value="${esc(l.at)}">
+ <label>聯絡方式</label><select id="lw">${opt(WAYS,l.way)}</select>
+ <label>聯絡主題（必填）</label><input id="lt" value="${esc(l.topic)}">
+ <label>聯絡內容</label><textarea id="lb" rows="3">${esc(l.content)}</textarea>
+ <label>客戶回覆</label><textarea id="lr" rows="2">${esc(l.reply)}</textarea>
+ <label>後續待辦</label><input id="ld" value="${esc(l.todo)}">
+ <label>下次聯絡日期（填寫後會出現在待聯絡清單）</label><input id="ln" type="date" value="${esc(l.next)}">
+ <label>關聯保單</label><select id="lp"></select>
+ <label>關聯業務機會</label><select id="lo"></select>
+ <div class="err" id="e"></div><div class="row"><button onclick="closeS()">取消</button><button class="pri" onclick="sl('${id||""}')">儲存紀錄</button></div>`);lpo(l.pid,l.oid)}
+function lpo(sel,so){const c=v("lc");document.getElementById("lo").innerHTML=`<option value="">不關聯</option>`+S.o.filter(x=>x.cid===c).map(x=>`<option value="${x.id}" ${x.id===so?"selected":""}>${esc(x.type)} ${esc(x.stage)}</option>`).join("");const ps=S.p.filter(p=>p.cid===c||(p.ins||[]).includes(c));document.getElementById("lp").innerHTML=`<option value="">不關聯</option>`+ps.map(p=>`<option value="${p.id}" ${p.id===sel?"selected":""}>${esc(p.type)} ${esc(p.no)}</option>`).join("")}
+function sl(id){const o={cid:v("lc"),at:v("la"),way:v("lw"),topic:v("lt"),content:v("lb"),reply:v("lr"),todo:v("ld"),next:v("ln"),pid:v("lp"),oid:v("lo")},e=document.getElementById("e");
+ if(!o.at)return e.textContent="請填寫聯絡日期及時間";if(!o.topic)return e.textContent="請填寫聯絡主題";
+ if(o.next&&o.next<o.at.slice(0,10))return e.textContent="下次聯絡日期不能早於本次聯絡日期";
+ if(id)Object.assign(S.l.find(l=>l.id===id),o);else S.l.push({id:uid(),...o});save();closeS();toast("聯絡紀錄已儲存");draw()}
+function saveT(){try{localStorage.setItem("crm_proto_types",JSON.stringify(TYPES))}catch(e){toast("無法儲存到瀏覽器")}}
+function setts(){return `<h1>設定</h1><h2>險種管理</h2><div class="mu">可自由新增或刪除險種。已有保單使用的險種無法刪除。車牌欄位只在「車險」出現，建築地址只在「火險」出現。</div>
+<div class="card">${TYPES.length?TYPES.map((t,i)=>`<div class="row" style="padding:4px 0"><span>${esc(t)} <span class="mu">${S.p.filter(p=>p.type===t).length} 張</span></span><button class="sm dg" onclick="delT(${i})">${armed==="t"+i?"再按一次刪除":"刪除"}</button></div>`).join(""):`<div class="empty">目前沒有險種，請先新增</div>`}</div>
+<div class="row"><input id="nt2" placeholder="輸入新險種名稱" maxlength="20"><button class="pri" onclick="addT()" style="white-space:nowrap">新增險種</button></div><div class="err" id="e"></div>`}
+function addT(){const n=v("nt2"),e=document.getElementById("e");if(!n)return e.textContent="請輸入險種名稱";if(TYPES.includes(n))return e.textContent="已有相同名稱的險種";TYPES.push(n);saveT();toast("險種已新增");draw()}
+function delT(i){const t=TYPES[i],k=S.p.filter(p=>p.type===t).length;if(k)return toast(`有 ${k} 張保單使用「${t}」，無法刪除`);if(armed==="t"+i){TYPES.splice(i,1);armed=null;saveT();toast("險種已刪除");draw()}else{armed="t"+i;draw();setTimeout(()=>{if(armed==="t"+i){armed=null;draw()}},4000)}}
+const TABS=[["home","首頁"],["c","客戶"],["p","保單"],["r","提醒"],["m","更多"]];
+function draw(){document.getElementById("nav").innerHTML=TABS.map(([k,l])=>`<button class="${tab===k||(k==="m"&&"hloysb".includes(tab))?"on":""}" onclick="go('${k}')">${l}</button>`).join("");
+ document.getElementById("app").innerHTML=({home,c:custs,h:fam,p:pols,r:rem,l:logs,o:opps,y:pays,b:bak,m:more,s:setts})[tab]();if(tab==="c")drawList();if(tab==="l")drawLogs()}
+function go(k){tab=k;armed=null;draw();scrollTo(0,0)}
+draw();
+</script></body></html>
