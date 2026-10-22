@@ -81,65 +81,91 @@ function home(){
  <h2>近期生日（30 天內）</h2>${b.length?b.map(x=>`<div class="card row"><span>${esc(x.c.name)}</span><span class="tag">${x.n===0?"今天":x.n+" 天後"}</span></div>`).join(""):`<div class="empty">30 天內沒有生日</div>`}${homeExtra()}`}
 
 function custs(){return `<div class="row"><h1>客戶</h1><button class="pri" onclick="fc()">新增客戶</button></div>
- <input id="q" placeholder="搜尋姓名、手機" oninput="drawList()" style="margin:8px 0"><div id="list"></div>`}
-function drawList(){const q=(document.getElementById("q")||{}).value||"",el=document.getElementById("list");if(!el)return;
- const r=S.c.filter(c=>!q||c.name.includes(q)||(c.phone||"").includes(q));
- el.innerHTML=r.length?r.map(c=>`<div class="card"><div class="row"><b>${esc(c.name)}</b><span class="tag">${c.hid?esc((S.h.find(h=>h.id===c.hid)||{}).name)+"　":""}${S.p.filter(p=>p.cid===c.id||(p.ins||[]).includes(c.id)).length} 張相關保單</span></div>
- <div class="mu">${esc(mask(c.idno))} ${esc(c.phone||"")} ${c.birth?"生日 "+fd(c.birth):""}</div>${c.note?`<div class="mu">${esc(c.note)}</div>`:""}
- <div style="margin-top:8px"><button class="sm" onclick="fl('','${c.id}')">記錄聯絡</button> <button class="sm" onclick="fc('${c.id}')">編輯</button> <button class="sm dg" onclick="del('c','${c.id}')">${armed==="c"+c.id?"再按一次刪除":"刪除"}</button></div></div>`).join(""):`<div class="empty">${S.c.length?"找不到符合的客戶":"還沒有客戶，先新增第一位"}</div>`}
-
-function pols(){return `<div class="row"><h1>保單</h1><button class="pri" onclick="fp()">新增保單</button></div>
- ${S.p.length?S.p.map(p=>`<div class="card"><div class="row"><b>要保人 ${esc(cn(p.cid))}</b><span class="tag">${esc(p.type)}</span></div>
- <div class="mu">${esc(p.co)} ${esc(p.no)}</div><div class="mu">被保險人：${insTxt(p)}</div><div class="mu">${fd(p.start)} 至 ${fd(p.end)}　NT$ ${Number(p.fee||0).toLocaleString("zh-TW")}</div>
- <div class="mu">${esc(p.status)}${p.plate?"　車牌 "+esc(p.plate):""}${p.addr?"　"+esc(p.addr):""}</div>
- <div style="margin-top:8px"><button class="sm" onclick="fp('${p.id}')">編輯</button> <button class="sm dg" onclick="del('p','${p.id}')">${armed==="p"+p.id?"再按一次刪除":"刪除"}</button></div></div>`).join(""):`<div class="empty">還沒有保單，請先新增客戶再建立保單</div>`}`}
-
-function rem(){const d=due();return `<h1>續保提醒</h1><div class="mu">到期前 90、60、30、14、7、3、1 天；已續保、已取消、不續保的保單不會出現</div>
+ <input id="q" placeholder="搜尋姓名、手機、地址、公司、統編、身分證" oninput="drawList()" style="margin:8px 0">
+ <select id="cf" onchange="drawList()"><option value="">全部客戶</option><option value="birth">缺出生年月日</option><option value="phone">缺手機</option><option value="addr">缺地址</option><option value="idno">缺身分證字號</option></select><div id="list" style="margin-top:8px"></div>`}
+function drawList(){const q=((document.getElementById("q")||{}).value||"").trim().toUpperCase(),f=(document.getElementById("cf")||{}).value||"",el=document.getElementById("list");if(!el)return;
+ const r=S.c.filter(c=>(!q||[c.name,c.phone,c.addr,c.company,c.taxId,c.email].some(x=>(x||"").toUpperCase().includes(q))||c.idno===q)&&(!f||!c[f]));
+ el.innerHTML=(f?`<div class="mu">符合 ${r.length} 位</div>`:"")+(r.length?r.map(c=>`<div class="card"><div class="row"><b>${esc(c.name)}</b><span class="tag">${c.hid?esc((S.h.find(h=>h.id===c.hid)||{}).name)+"　":""}${S.p.filter(p=>p.cid===c.id||(p.ins||[]).includes(c.id)).length} 張相關保單</span></div>
+ <div class="mu">${esc(mask(c.idno))} ${esc(c.phone||"")} ${c.birth?"生日 "+fd(c.birth):""}${c.hasSeal?"　有印章":""}</div>
+ ${c.addr?`<div class="mu">${esc(c.addr)}</div>`:""}${c.company?`<div class="mu">${esc(c.company)}${c.taxId?"　統編 "+esc(c.taxId):""}</div>`:""}${c.occ||c.email?`<div class="mu">${esc(c.occ||"")} ${esc(c.email||"")}</div>`:""}
+ ${c.refName?`<div class="mu">介紹人 ${esc(c.refName)} ${esc(c.refPhone||"")}</div>`:""}${c.cName?`<div class="mu">聯絡人 ${esc(c.cName)} ${esc(c.cPhone||"")} ${esc(c.cRel||"")}</div>`:""}${c.note?`<div class="mu">${esc(c.note)}</div>`:""}
+ <div style="margin-top:8px"><button class="sm" onclick="fl('','${c.id}')">記錄聯絡</button> <button class="sm" onclick="fc('${c.id}')">編輯</button> <button class="sm dg" onclick="del('c','${c.id}')">${armed==="c"+c.id?"再按一次刪除":"刪除"}</button></div></div>`).join(""):`<div class="empty">${S.c.length?"找不到符合的客戶":"還沒有客戶，先新增第一位"}</div>`)}
+const insPlain=p=>((p.ins&&p.ins.length)?p.ins:[p.cid]).map(cn).join(" ");
+function pols(){return `<div class="row"><h1>保單</h1><button class="pri" onclick="fp()">新增保單</button></div><input id="pq" placeholder="搜尋要保人、被保險人、保單號碼、車牌、公司" oninput="drawPols()" style="margin:8px 0"><div id="pl"></div>`}
+function drawPols(){const q=((document.getElementById("pq")||{}).value||"").trim().toUpperCase(),el=document.getElementById("pl");if(!el)return;
+ const r=S.p.filter(p=>!q||[cn(p.cid),insPlain(p),p.no,p.plate,p.co,p.type,p.addr].some(x=>(x||"").toUpperCase().includes(q)));
+ el.innerHTML=r.length?r.map(p=>{const h=S.c.find(x=>x.id===p.cid);return `<div class="card"><div class="row"><b>要保人 ${esc(cn(p.cid))}</b><span class="tag">${esc(p.type)}</span></div>
+ ${h&&h.phone?`<div class="mu">要保人手機 ${esc(h.phone)}</div>`:""}<div class="mu">${esc(p.co)} ${esc(p.no)}</div><div class="mu">被保險人：${insTxt(p)}</div><div class="mu">${fd(p.start)} 至 ${fd(p.end)}　NT$ ${Number(p.fee||0).toLocaleString("zh-TW")}</div>
+ <div class="mu">${esc(p.status)}${p.plate?"　車牌 "+esc(p.plate):""}${p.pcn?"　"+esc(p.pcn):""}</div>
+ ${p.addr||p.area||p.grade?`<div class="mu">建築 ${esc(p.addr||"")}${p.area?"　"+esc(p.area)+" 坪":""}${p.byear?"　"+esc(p.byear)+" 年":""}${p.struct?"　"+esc(p.struct):""}${p.floors?"　"+esc(p.floors)+" 層":""}${p.grade?"　等級 "+esc(p.grade):""}</div>`:""}
+ ${p.bk?`<div class="mu">抵押銀行 ${esc(p.bk)}${p.bka?"　寄送地址 "+esc(p.bka):""}</div>`:""}${p.bn?`<div class="mu">${esc(p.bn)}</div>`:""}
+ <div style="margin-top:8px"><button class="sm" onclick="fp('${p.id}')">編輯</button> <button class="sm dg" onclick="del('p','${p.id}')">${armed==="p"+p.id?"再按一次刪除":"刪除"}</button></div></div>`}).join(""):`<div class="empty">${S.p.length?"找不到符合的保單":"還沒有保單，請先新增客戶再建立保單"}</div>`}
+function rem(){const d=due(),oo=S.o.filter(o=>OPENS(o.stage)&&o.next&&dl(o.next)<=7).map(o=>({o,n:dl(o.next)})).sort((a,b)=>a.n-b.n),td=todoC();
+ return `<h1>提醒中心</h1><h2>續保提醒</h2><div class="mu">到期前 90、60、30、14、7、3、1 天；已續保、已取消、不續保的保單不會出現</div>
  ${d.length?d.map(x=>`<div class="card"><div class="row"><b>${esc(cn(x.p.cid))}</b>${dayTag(x.n)}</div>
- <div class="mu">${esc(x.p.type)}　${esc(x.p.co)} ${esc(x.p.no)}　被保險人：${insTxt(x.p)}</div><div class="mu">到期 ${fd(x.p.end)}　${x.n>=0?"目前在 "+step(x.n)+" 天提醒區間　":""}${esc(x.p.status)}</div></div>`).join(""):`<div class="empty">90 天內沒有需要處理的到期保單</div>`}`}
-
+ <div class="mu">${esc(x.p.type)}　${esc(x.p.co)} ${esc(x.p.no)}　被保險人：${insTxt(x.p)}</div><div class="mu">到期 ${fd(x.p.end)}　${x.n>=0?"目前在 "+step(x.n)+" 天提醒區間　":""}${esc(x.p.status)}</div></div>`).join(""):`<div class="empty">90 天內沒有需要處理的到期保單</div>`}
+ <h2>業務機會提醒</h2><div class="mu">進行中的機會，下次聯絡日期在 7 天內或已逾期；與保單到期提醒分開管理</div>
+ ${oo.length?oo.map(x=>`<div class="card"><div class="row"><b>${esc(cn(x.o.cid))}</b><span class="tag ${x.n<0?"d":"w"}">${x.n<0?"逾期 "+(-x.n)+" 天":x.n===0?"今天":x.n+" 天後"}</span></div>
+ <div class="mu">${esc(x.o.type)}　${esc(x.o.stage)}　預估保費 NT$ ${Number(x.o.fee||0).toLocaleString("zh-TW")}</div><div class="mu">下次聯絡 ${fd(x.o.next)}${x.o.target?"　預計 "+fd(x.o.target):""}</div></div>`).join(""):`<div class="empty">目前沒有需要處理的業務機會</div>`}
+ <h2>待聯絡客戶</h2><div class="mu">依每位客戶最新聯絡紀錄的下次聯絡日期計算</div>
+ ${td.length?td.map(x=>`<div class="card"><div class="row"><b>${esc(x.c.name)}</b><span class="tag ${x.n<0?"d":"w"}">${x.n<0?"逾期 "+(-x.n)+" 天":"今天"}</span></div><div class="mu">${esc(x.l.todo||x.l.topic)}</div><div style="margin-top:6px"><button class="sm" onclick="fl('','${x.c.id}')">記錄聯絡</button></div></div>`).join(""):`<div class="empty">今天沒有待聯絡的客戶</div>`}`}
 const sheet=h=>{document.getElementById("sheetBody").innerHTML=h;document.getElementById("sheet").classList.add("open")};
 const closeS=()=>document.getElementById("sheet").classList.remove("open");
 document.getElementById("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")closeS()});
 const v=id=>document.getElementById(id).value.trim();
 const opt=(a,s)=>a.map(x=>`<option ${x===s?"selected":""}>${x}</option>`).join("");
 
-function fc(id){const c=S.c.find(x=>x.id===id)||{};
- sheet(`<h1>${id?"編輯客戶":"新增客戶"}</h1>
+function fc(id){const c=S.c.find(x=>x.id===id)||{},I=(k,l,x="")=>`<label>${l}</label><input id="${k}" value="${esc(c[k.slice(1)])}" ${x}>`;
+ sheet(`<h1>${id?"編輯客戶":"新增客戶"}</h1><h2>基本資料</h2>
  <label>客戶姓名（必填）</label><input id="n" value="${esc(c.name)}">
  <label>身分證字號</label><input id="i" value="${esc(c.idno)}" maxlength="10" autocapitalize="characters">
  <label>出生年月日</label><input id="b" type="date" value="${esc(c.birth)}">
  <label>手機</label><input id="ph" inputmode="tel" value="${esc(c.phone)}">
- <label>備註</label><textarea id="nt" rows="3">${esc(c.note)}</textarea>
+ <label>Email</label><input id="em" type="email" value="${esc(c.email)}">
+ <label>地址</label><input id="ad" value="${esc(c.addr)}">
+ <label>職業</label><input id="oc" value="${esc(c.occ)}">
+ <label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input type="checkbox" id="se" style="width:auto;min-height:0" ${c.hasSeal?"checked":""}>有印章</label>
+ <h2>公司資料</h2><label>公司名稱</label><input id="co" value="${esc(c.company)}"><label>統一編號（8 碼）</label><input id="tx" inputmode="numeric" maxlength="8" value="${esc(c.taxId)}">
+ <h2>介紹人與聯絡人</h2><label>介紹人姓名</label><input id="rn" value="${esc(c.refName)}"><label>介紹人手機</label><input id="rp" inputmode="tel" value="${esc(c.refPhone)}">
+ <label>主要聯絡人</label><input id="cn1" value="${esc(c.cName)}"><label>聯絡人電話</label><input id="cp" inputmode="tel" value="${esc(c.cPhone)}"><label>與客戶的關係</label><input id="cr" value="${esc(c.cRel)}">
+ <label>備註與喜好</label><textarea id="nt" rows="3">${esc(c.note)}</textarea>
  <div class="err" id="e"></div><div class="row"><button onclick="closeS()">取消</button><button class="pri" onclick="sc('${id||""}')">儲存客戶</button></div>`)}
-function sc(id){const o={name:v("n"),idno:v("i").toUpperCase(),birth:v("b"),phone:v("ph"),note:v("nt")},e=document.getElementById("e");
+function sc(id){const o={name:v("n"),idno:v("i").toUpperCase(),birth:v("b"),phone:v("ph"),email:v("em"),addr:v("ad"),occ:v("oc"),hasSeal:document.getElementById("se").checked,company:v("co"),taxId:v("tx"),refName:v("rn"),refPhone:v("rp"),cName:v("cn1"),cPhone:v("cp"),cRel:v("cr"),note:v("nt")},e=document.getElementById("e");
  if(!o.name)return e.textContent="請填寫客戶姓名";
  if(o.idno&&!/^[A-Z][12]\d{8}$/.test(o.idno))return e.textContent="身分證字號格式不正確，應為 1 個英文字母加 9 碼數字";
+ if(o.taxId&&!/^\d{8}$/.test(o.taxId))return e.textContent="統一編號應為 8 碼數字";
+ if(o.email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(o.email))return e.textContent="Email 格式不正確";
  const dup=o.idno&&S.c.find(c=>c.idno===o.idno&&c.id!==id);if(dup&&!confirmDup(dup))return e.textContent=`已有相同身分證字號的客戶：${dup.name}。如確定要建立，請再按一次儲存`;
  if(id)Object.assign(S.c.find(c=>c.id===id),o);else S.c.push({id:uid(),...o});
  dupArm=null;save();closeS();toast("客戶已儲存");draw()}
 let dupArm=null;function confirmDup(d){if(dupArm===d.id)return true;dupArm=d.id;return false}
 
 function fp(id){if(!S.c.length)return toast("請先新增客戶");if(!TYPES.length)return toast("請先到設定新增險種");const p=S.p.find(x=>x.id===id)||{type:TYPES[0],status:"草稿"};const ins=p.ins||[],same=!ins.length||(ins.length===1&&ins[0]===p.cid);
+ const T=(k,l,x="")=>`<label>${l}</label><input id="${k}" value="${esc(p[x||k])}">`;
  sheet(`<h1>${id?"編輯保單":"新增保單"}</h1>
- <label>要保人（必填）</label><select id="c">${S.c.map(c=>`<option value="${c.id}" ${c.id===p.cid?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+ <label>要保人（必填）</label>${cpick("c",p.cid)}
  <label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input type="checkbox" id="same" style="width:auto;min-height:0" onchange="ts()" ${same?"checked":""}>被保險人與要保人相同</label>
- <div id="insl"><label>被保險人（可複選，限已建立的客戶）</label>${S.c.map(c=>`<label style="display:flex;gap:8px;align-items:center;color:var(--tx);margin:4px 0"><input type="checkbox" class="ib" value="${c.id}" style="width:auto;min-height:0" ${ins.includes(c.id)?"checked":""}>${esc(c.name)}</label>`).join("")}</div>
+ <div id="insl"><label>被保險人（可複選，限已建立的客戶）</label><input placeholder="搜尋被保險人" oninput="ifl(this.value)" style="margin-bottom:6px">${S.c.map(c=>`<label class="ibl" data-k="${esc((c.name+" "+(c.phone||"")).toUpperCase())}" style="display:flex;gap:8px;align-items:center;color:var(--tx);margin:4px 0"><input type="checkbox" class="ib" value="${c.id}" style="width:auto;min-height:0" ${ins.includes(c.id)?"checked":""}>${esc(c.name)}${c.phone?"　"+esc(c.phone):""}</label>`).join("")}</div>
  <label>險種</label><select id="t" onchange="tg()">${opt(TYPES.includes(p.type)?TYPES:[...TYPES,p.type],p.type)}</select>
  <label>保險公司</label><input id="co" value="${esc(p.co)}"><label>保單號碼</label><input id="no" value="${esc(p.no)}">
  <label>起保日期</label><input id="s" type="date" value="${esc(p.start)}"><label>到期日期</label><input id="en" type="date" value="${esc(p.end)}">
  <label>保費（新臺幣）</label><input id="f" inputmode="numeric" value="${esc(p.fee)}">
  <label>保單狀態</label><select id="st">${opt(STATUS,p.status)}</select>
- <div id="car"><label>車牌號碼</label><input id="pl" value="${esc(p.plate)}"></div>
- <div id="fire"><label>建築地址</label><input id="ad" value="${esc(p.addr)}"></div>
+ <div id="car"><h2>車輛資料</h2>${T("pl","車牌號碼","plate")}${T("pcn","車輛備註")}</div>
+ <div id="bld"><h2>建物資料</h2>${T("ad","建築地址","addr")}${T("ar","建築坪數","area")}${T("by","建築年份（西元）","byear")}${T("bs","建築構造","struct")}${T("bf","總樓層","floors")}${T("bg","建築等級","grade")}${T("bk","抵押銀行")}${T("bka","銀行保單寄送地址")}${T("bn","建築物備註")}</div>
  <div class="err" id="e"></div><div class="row"><button onclick="closeS()">取消</button><button class="pri" onclick="sp('${id||""}')">儲存保單</button></div>`);tg();ts()}
 const insTxt=p=>((p.ins&&p.ins.length)?p.ins:[p.cid]).map(i=>esc(cn(i))).join("、");
+function ifl(q){q=q.trim().toUpperCase();document.querySelectorAll(".ibl").forEach(l=>{l.style.display=!q||l.dataset.k.includes(q)||l.querySelector("input").checked?"flex":"none"})}
 function ts(){document.getElementById("insl").style.display=document.getElementById("same").checked?"none":""}
-function tg(){const t=document.getElementById("t").value;document.getElementById("car").style.display=t==="車險"?"":"none";document.getElementById("fire").style.display=t==="火險"?"":"none"}
-function sp(id){const t=v("t"),o={cid:v("c"),ins:document.getElementById("same").checked?[v("c")]:[...document.querySelectorAll(".ib:checked")].map(x=>x.value),type:t,co:v("co"),no:v("no"),start:v("s"),end:v("en"),fee:v("f").replace(/,/g,""),status:v("st"),plate:t==="車險"?v("pl"):"",addr:t==="火險"?v("ad"):""},e=document.getElementById("e");
+function tg(){const f=TF[document.getElementById("t").value]||{};document.getElementById("car").style.display=f.plate?"":"none";document.getElementById("bld").style.display=f.bld?"":"none"}
+function sp(id){const t=v("t"),f=TF[t]||{},o={cid:v("c"),ins:document.getElementById("same").checked?[v("c")]:[...document.querySelectorAll(".ib:checked")].map(x=>x.value),type:t,co:v("co"),no:v("no"),start:v("s"),end:v("en"),fee:v("f").replace(/,/g,""),status:v("st"),
+ plate:f.plate?v("pl"):"",pcn:f.plate?v("pcn"):"",addr:f.bld?v("ad"):"",area:f.bld?v("ar"):"",byear:f.bld?v("by"):"",struct:f.bld?v("bs"):"",floors:f.bld?v("bf"):"",grade:f.bld?v("bg"):"",bk:f.bld?v("bk"):"",bka:f.bld?v("bka"):"",bn:f.bld?v("bn"):""},e=document.getElementById("e");
  if(!o.ins.length)return e.textContent="請至少選擇一位被保險人";
  if(o.start&&o.end&&o.end<=o.start)return e.textContent="到期日期必須晚於起保日期";
  if(o.fee&&!/^\d+$/.test(o.fee))return e.textContent="保費請輸入整數數字";
+ if(o.area&&!/^\d+(\.\d+)?$/.test(o.area))return e.textContent="建築坪數請輸入數字";
+ if(o.byear&&!(/^\d{4}$/.test(o.byear)&&+o.byear>=1900&&+o.byear<=new Date().getFullYear()+1))return e.textContent="建築年份請輸入 4 位數西元年";
+ if(o.floors&&!/^\d{1,3}$/.test(o.floors))return e.textContent="總樓層請輸入整數";
  if(o.status==="有效"&&!o.end)return e.textContent="狀態為有效時，請填寫到期日期";
  if(id)Object.assign(S.p.find(p=>p.id===id),o);else S.p.push({id:uid(),...o});
  save();closeS();toast("保單已儲存");draw()}
@@ -190,10 +216,10 @@ function pays(){const ym=new Date().toLocaleDateString("sv").slice(0,7);
  `<div class="row"><h2>信用卡（遮罩）</h2><button class="pri sm" onclick="fk()">新增信用卡</button></div>`+
  (S.k.length?S.k.map(k=>{const ex=k.exp&&k.exp<ym;return `<div class="card"><div class="row"><b>${esc(cn(k.cid))}</b><span class="tag ${ex?"d":""}">${ex?"已過期":"未過期"}</span></div>
  <div class="mu">${esc(k.bank)} ${esc(k.brand)}　＊＊＊＊ ${esc(k.last4)}　到期 ${esc((k.exp||"").replace("-","/"))||"未填"}</div>
- <div class="mu">持卡人 ${esc(k.holder||"—")}　${esc(k.method)}　${esc(k.status)}</div>${k.note?`<div class="mu">${esc(k.note)}</div>`:""}
+ <div class="mu">持卡人 ${esc(k.holder||"—")}${k.phone?"　"+esc(k.phone):""}　${esc(k.method)}　${esc(k.status)}</div>${k.note?`<div class="mu">${esc(k.note)}</div>`:""}
  <div style="margin-top:8px"><button class="sm" onclick="fk('${k.id}')">編輯</button> <button class="sm dg" onclick="del('k','${k.id}')">${armed==="k"+k.id?"再按一次刪除":"刪除"}</button></div></div>`}).join(""):`<div class="empty">還沒有信用卡資料</div>`)}
 function fy(id){if(!S.c.length)return toast("請先新增客戶");const y=S.y.find(x=>x.id===id)||{cid:S.c[0].id,status:"待收"};
- sheet(`<h1>${id?"編輯支票":"新增支票"}</h1><label>關聯客戶（必填）</label><select id="yc" onchange="yal([])">${S.c.map(c=>`<option value="${c.id}" ${c.id===y.cid?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+ sheet(`<h1>${id?"編輯支票":"新增支票"}</h1><label>關聯客戶（必填）</label>${cpick("yc",y.cid,"yal([])")}
  <label>支票開票人</label><input id="yd" value="${esc(y.drawer)}"><label>支票付款人</label><input id="yp" value="${esc(y.payer)}">
  <label>支票持有人</label><input id="yh" value="${esc(y.holder)}"><label>支票關係人</label><input id="yr" value="${esc(y.related)}">
  <label>開票日期</label><input id="yi" type="date" value="${esc(y.issue)}"><label>票據到期日</label><input id="yu" type="date" value="${esc(y.due)}">
@@ -212,79 +238,111 @@ function sy(id){const o={cid:v("yc"),drawer:v("yd"),payer:v("yp"),holder:v("yh")
  if(id)Object.assign(S.y.find(x=>x.id===id),o);else S.y.push({id:uid(),...o});save();closeS();toast("支票已儲存");draw()}
 function fk(id){if(!S.c.length)return toast("請先新增客戶");const k=S.k.find(x=>x.id===id)||{cid:S.c[0].id,brand:"VISA",method:"一次付清",status:"未刷卡"};
  sheet(`<h1>${id?"編輯信用卡":"新增信用卡"}</h1><div class="note">請勿在任何欄位輸入完整卡號、安全碼（CVV）或密碼。</div>
- <label>關聯客戶（必填）</label><select id="kc">${S.c.map(c=>`<option value="${c.id}" ${c.id===k.cid?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
- <label>持卡人姓名</label><input id="kh" value="${esc(k.holder)}"><label>發卡銀行</label><input id="kb" value="${esc(k.bank)}">
+ <label>關聯客戶（必填）</label>${cpick("kc",k.cid)}
+ <label>持卡人姓名</label><input id="kh" value="${esc(k.holder)}"><label>持卡人手機</label><input id="kp" inputmode="tel" value="${esc(k.phone)}"><label>發卡銀行</label><input id="kb" value="${esc(k.bank)}">
  <label>卡別</label><select id="kr">${opt(KBR,k.brand)}</select>
  <label>到期年月</label><input id="ke" type="month" value="${esc(k.exp)}">
  <label>卡號末四碼（必填）</label><input id="kl" maxlength="4" inputmode="numeric" value="${esc(k.last4)}">
  <label>付款方式</label><select id="km">${opt(KME,k.method)}</select><label>刷卡狀態</label><select id="ks">${opt(KST,k.status)}</select>
  <label>備註</label><textarea id="kn" rows="2">${esc(k.note)}</textarea>
  <div class="err" id="e"></div><div class="row"><button onclick="closeS()">取消</button><button class="pri" onclick="sk('${id||""}')">儲存</button></div>`)}
-function sk(id){const o={cid:v("kc"),holder:v("kh"),bank:v("kb"),brand:v("kr"),exp:v("ke"),last4:v("kl"),method:v("km"),status:v("ks"),note:v("kn")},e=document.getElementById("e");
+function sk(id){const o={cid:v("kc"),holder:v("kh"),phone:v("kp"),bank:v("kb"),brand:v("kr"),exp:v("ke"),last4:v("kl"),method:v("km"),status:v("ks"),note:v("kn")},e=document.getElementById("e");
+ if(o.phone&&!/^[0-9+\-\s()]{6,20}$/.test(o.phone))return e.textContent="手機號碼格式不正確";
  if(!/^\d{4}$/.test(o.last4))return e.textContent="請輸入 4 碼數字的卡號末四碼";
  if([o.holder,o.bank,o.note].some(s=>CARD.test(s)))return e.textContent="偵測到疑似完整卡號，系統不儲存完整卡號，請刪除後再儲存";
  if(id)Object.assign(S.k.find(x=>x.id===id),o);else S.k.push({id:uid(),...o});save();closeS();toast("信用卡資料已儲存");draw()}
-const FIELDS=[["name","姓名"],["idno","身分證字號"],["birth","出生年月日"],["phone","手機"],["note","其他備註"]],SENS=/卡號|信用卡|cvv|cvc|安全碼|密碼|pin/i;
+let TF={"車險":{plate:1},"火險":{bld:1}};
+try{const r=localStorage.getItem("crm_proto_tf");if(r)TF=JSON.parse(r)}catch(e){}
+const saveTF=()=>{try{localStorage.setItem("crm_proto_tf",JSON.stringify(TF))}catch(e){toast("無法儲存到瀏覽器")}};
+const custOpts=(q,sel)=>{q=(q||"").trim().toUpperCase();let r=S.c.filter(c=>!q||[c.name,c.phone,c.company,c.taxId].some(x=>(x||"").toUpperCase().includes(q)));
+ if(sel&&!r.some(c=>c.id===sel)){const s=S.c.find(c=>c.id===sel);if(s)r=[s,...r]}
+ return r.map(c=>`<option value="${c.id}" ${c.id===sel?"selected":""}>${esc(c.name)}${c.phone?"　"+esc(c.phone):""}</option>`).join("")||`<option value="">找不到符合的客戶</option>`};
+const cpick=(id,sel,on)=>`<input placeholder="輸入姓名、手機或公司搜尋" oninput="cflt('${id}',this.value)" style="margin-bottom:6px"><select id="${id}" ${on?`onchange="${on}"`:""}>${custOpts("",sel)}</select>`;
+function cflt(id,q){const s=document.getElementById(id);s.innerHTML=custOpts(q,s.value)}
+const FIELDS=[["name","姓名","c"],["idno","身分證字號","c"],["birth","出生年月日","c"],["phone","手機","c"],["email","Email","c"],["addr","地址","c"],["occ","職業","c"],["company","公司名稱","c"],["taxId","統一編號","c"],["note","其他備註","c"],["holderName","要保人姓名（與客戶不同時）","p"],["pco","保險公司","p"],["pno","保單號碼","p"],["ptype","險種","p"],["pfee","保費","p"],["pstart","起保日期","p"],["pend","到期日期","p"],["plate","車牌","p"]],SENS=/卡號|信用卡|cvv|cvc|安全碼|密碼|pin/i;
 let IM={step:1},RS=null,XF=false;
 const nowS=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16).replace("T"," ");
 function aud(a){S.a.push({at:nowS(),act:a});S.a=S.a.slice(-100);save()}
 async function saveFile(name,data){try{const d=typeof claude!=="undefined"?await claude.use("downloads"):null;if(!d){toast("目前環境不支援下載");return false}await d.save({filename:name,data});toast("檔案已儲存");return true}catch(e){if(!(e&&e.code==="declined"))toast("下載失敗："+((e&&e.code)||"未知錯誤"));return false}}
-async function doBackup(){const j=JSON.stringify({app:"crm-prototype",ver:1,at:nowS(),types:TYPES,data:{c:S.c,p:S.p,h:S.h,r:S.r,l:S.l,o:S.o,y:S.y,k:S.k,b:S.b,a:S.a}},null,1);if(await saveFile("crm-backup-"+nowS().slice(0,10).replaceAll("-","")+".json",j))aud("下載備份")}
-function pickRestore(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(j.app!=="crm-prototype"||!j.data)throw 0;const d={};["c","p","h","r","l","o","y","k","b","a"].forEach(x=>{d[x]=Array.isArray(j.data[x])?j.data[x]:[]});RS={d,types:Array.isArray(j.types)?j.types.filter(t=>typeof t==="string"):null,at:j.at};armed=null;draw()}catch(e){RS=null;toast("這不是有效的備份檔")}};r.readAsText(f)}
+async function doBackup(){const j=JSON.stringify({app:"crm-prototype",ver:1,at:nowS(),types:TYPES,tf:TF,data:{c:S.c,p:S.p,h:S.h,r:S.r,l:S.l,o:S.o,y:S.y,k:S.k,b:S.b,a:S.a}},null,1);if(await saveFile("crm-backup-"+nowS().slice(0,10).replaceAll("-","")+".json",j))aud("下載備份")}
+function pickRestore(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(j.app!=="crm-prototype"||!j.data)throw 0;const d={};["c","p","h","r","l","o","y","k","b","a"].forEach(x=>{d[x]=Array.isArray(j.data[x])?j.data[x]:[]});RS={d,tf:(j.tf&&typeof j.tf==="object")?j.tf:null,types:Array.isArray(j.types)?j.types.filter(t=>typeof t==="string"):null,at:j.at};armed=null;draw()}catch(e){RS=null;toast("這不是有效的備份檔")}};r.readAsText(f)}
 function doRestore(){if(armed!=="rs"){armed="rs";draw();setTimeout(()=>{if(armed==="rs"){armed=null;draw()}},5000);return}
- Object.assign(S,RS.d);if(RS.types)TYPES=RS.types;saveT();RS=null;armed=null;aud("還原備份");draw();toast("已還原備份")}
+ Object.assign(S,RS.d);if(RS.types)TYPES=RS.types;if(RS.tf){TF=RS.tf;saveTF()}saveT();RS=null;armed=null;aud("還原備份");draw();toast("已還原備份")}
 const cs=x=>{let s=String(x??"");if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
 async function exCSV(kind){if(kind==="c"&&XF&&armed!=="xf"){armed="xf";draw();setTimeout(()=>{if(armed==="xf"){armed=null;draw()}},5000);return toast("再按一次，確認匯出完整身分證")}
- const rows=kind==="c"?[["序號","姓名","身分證字號","出生年月日","手機","備註"],...S.c.map((c,i)=>[i+1,c.name,XF?c.idno:mask(c.idno),fd(c.birth),c.phone,c.note])]:[["要保人","被保險人","險種","保險公司","保單號碼","起保日期","到期日期","保費","狀態"],...S.p.map(p=>[cn(p.cid),((p.ins&&p.ins.length)?p.ins:[p.cid]).map(cn).join("、"),p.type,p.co,p.no,fd(p.start),fd(p.end),p.fee,p.status])];
+ const rows=kind==="c"?[["序號","姓名","身分證字號","出生年月日","手機","Email","地址","職業","公司名稱","統編","備註"],...S.c.map((c,i)=>[i+1,c.name,XF?c.idno:mask(c.idno),fd(c.birth),c.phone,c.email,c.addr,c.occ,c.company,c.taxId,c.note])]:[["要保人","要保人手機","被保險人","險種","保險公司","保單號碼","起保日期","到期日期","保費","狀態","車牌","建築地址","坪數","年份","構造","總樓層","等級","抵押銀行","銀行寄送地址"],...S.p.map(p=>[cn(p.cid),(S.c.find(x=>x.id===p.cid)||{}).phone,((p.ins&&p.ins.length)?p.ins:[p.cid]).map(cn).join("、"),p.type,p.co,p.no,fd(p.start),fd(p.end),p.fee,p.status,p.plate,p.addr,p.area,p.byear,p.struct,p.floors,p.grade,p.bk,p.bka])];
  const ok=await saveFile((kind==="c"?"customers":"policies")+".csv","\uFEFF"+rows.map(r=>r.map(cs).join(",")).join("\r\n"));if(ok)aud((kind==="c"?"匯出客戶":"匯出保單")+(kind==="c"&&XF?"（含完整身分證）":"（遮罩）"));armed=null;draw()}
-function normD(v){if(v===""||v==null)return"";const f=(y,m,d)=>{if(y<200)y+=1911;const t=new Date(y,m-1,d);return t.getFullYear()===y&&t.getMonth()===m-1&&t.getDate()===d&&y>=1900&&t<=new Date()?`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`:""};
+function normD(v,fut){if(v===""||v==null)return"";const f=(y,m,d)=>{if(y<200)y+=1911;const t=new Date(y,m-1,d);return t.getFullYear()===y&&t.getMonth()===m-1&&t.getDate()===d&&y>=1900&&(fut||t<=new Date())?`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`:""};
  if(v instanceof Date){const x=new Date(v.getTime()+43200000);return f(x.getFullYear(),x.getMonth()+1,x.getDate())}
  if(typeof v==="number"){const p=XLSX.SSF.parse_date_code(v);return p?f(p.y,p.m,p.d):""}
- const m=String(v).trim().match(/^(\d{2,4})\s*[\/.\-年]\s*(\d{1,2})\s*[\/.\-月]\s*(\d{1,2})/);return m?f(+m[1],+m[2],+m[3]):""}
+ const m=String(v).trim().replace(/^民國\s*/,"").match(/^(\d{2,4})\s*[\/.\-年]\s*(\d{1,2})\s*[\/.\-月]\s*(\d{1,2})/);return m?f(+m[1],+m[2],+m[3]):""}
 function cell(v){return v instanceof Date?normD(v):String(v??"").trim()}
-function autoMap(h){const re={name:/姓名|^客戶$/,idno:/身分證|身份證/,birth:/生日|出生/,phone:/手機|電話|行動/,note:/備註/},m={};for(const k in re){m[k]=h.findIndex(x=>re[k].test(x)&&!SENS.test(x))}return m}
+function autoMap(h){const re={name:/^(?!.*要保人).*(姓名|^客戶$)/,idno:/身分證|身份證/,birth:/生日|出生/,phone:/手機|行動|電話/,email:/mail|信箱/i,addr:/^(?!.*(公司|銀行|建築)).*地址/,occ:/職業/,company:/公司名稱|^公司$/,taxId:/統編|統一編號/,holderName:/^要保人(姓名)?$/,pco:/保險公司|^保險$/,pno:/保單號/,ptype:/險種|種類/,pfee:/保費/,pstart:/起保|生效|保險起/,pend:/到期|迄/,plate:/車牌/,note:/備註/},m={};for(const k in re){m[k]=h.findIndex(x=>re[k].test(x)&&!SENS.test(x))}return m}
 function xlPick(f){if(!f)return;if(typeof XLSX==="undefined")return toast("Excel 元件載入失敗，請檢查網路後重新整理");const r=new FileReader();r.onload=()=>{try{const wb=XLSX.read(new Uint8Array(r.result),{type:"array",cellDates:true});IM={step:2,wb,sheets:wb.SheetNames};draw()}catch(e){toast("無法讀取此檔案")}};r.readAsArrayBuffer(f)}
 function xlSheet(n){const rows=XLSX.utils.sheet_to_json(IM.wb.Sheets[n],{header:1,raw:true,defval:""}).filter(r=>r.some(c=>String(c).trim()!==""));if(rows.length<2)return toast("此工作表沒有資料列");
- IM.sheet=n;IM.hdr=rows[0].map((h,i)=>String(h||"欄位"+(i+1)).trim());IM.rows=rows.slice(1);IM.map=autoMap(IM.hdr);IM.step=3;IM.wb=null;draw()}
+ IM.sheet=n;IM.hdr=rows[0].map((h,i)=>String(h||"欄位"+(i+1)).trim());IM.rows=rows.slice(1);IM.map=autoMap(IM.hdr);IM.step=3;IM.len=false;IM.wb=null;draw()}
+function matchType(ty){if(!ty)return"";return TYPES.find(t=>t===ty)||TYPES.find(t=>ty.includes(t)||t.includes(ty))||""}
 function xlCheck(){const m=IM.map,e=document.getElementById("e");if(m.name<0)return e.textContent="請先對應「姓名」欄位";
- const seen=new Map(),P=[];let warn=0;
- IM.rows.forEach((r,i)=>{const g=k=>m[k]>=0?r[m[k]]:"",o={name:cell(g("name")),idno:cell(g("idno")).toUpperCase().replace(/\s/g,""),birth:normD(g("birth")),phone:cell(g("phone")),note:cell(g("note"))},errs=[];
-  if(g("birth")!==""&&!o.birth)errs.push("出生年月日格式不正確");
+ const seen=new Map(),seenP=new Set(),P=[],today=nowS().slice(0,10),pcols=["pno","ptype","pfee","pstart","pend","plate"].some(k=>m[k]>=0);let warn=0,fixed=0;
+ IM.rows.forEach((r,i)=>{const g=k=>m[k]>=0?r[m[k]]:"",o={name:cell(g("name")),idno:cell(g("idno")).toUpperCase().replace(/\s/g,""),birth:normD(g("birth")),phone:cell(g("phone")),email:cell(g("email")),addr:cell(g("addr")),occ:cell(g("occ")),company:cell(g("company")),taxId:cell(g("taxId")),note:cell(g("note"))},errs=[];
+  let idBad=o.idno&&!V_ID.test(o.idno),bdBad=g("birth")!==""&&!o.birth;
+  if(IM.len){if(idBad){o.idno="";fixed++;idBad=false}if(bdBad){fixed++;bdBad=false}}
+  if(bdBad)errs.push("出生年月日格式不正確");
   if(/^9\d{8}$/.test(o.phone))o.phone="0"+o.phone;
-  ["name","phone","note"].forEach(k=>{if(CARD.test(o[k])){o[k]="";warn++}});
+  ["name","phone","note","addr","company"].forEach(k=>{if(CARD.test(o[k])){o[k]="";warn++}});
   if(!o.name)errs.push("姓名空白");
-  if(o.idno&&!/^[A-Z][12]\d{8}$/.test(o.idno))errs.push("身分證字號格式不正確");
-  if(o.idno&&seen.has(o.idno))errs.push("與檔案第 "+seen.get(o.idno)+" 列的身分證字號重複");else if(o.idno)seen.set(o.idno,i+2);
+  if(idBad)errs.push("身分證字號格式不正確");
+  if(o.idno&&seen.has(o.idno))errs.push("身分證字號在檔案內重複");else if(o.idno)seen.set(o.idno,i+2);
   const ex=o.idno?S.c.find(c=>c.idno===o.idno):null;let kind="add",act="add",diffs=[];
   if(errs.length){kind="fail";act="skip"}
-  else if(ex){kind="upd";act="skip";[["name","姓名"],["birth","出生年月日"],["phone","手機"],["note","備註"]].forEach(([k,l])=>{if(o[k]&&o[k]!==(ex[k]||""))diffs.push({k,l,ov:ex[k]||"",nv:o[k]})})}
+  else if(ex){kind="upd";act="skip";[["name","姓名"],["birth","出生年月日"],["phone","手機"],["email","Email"],["addr","地址"],["occ","職業"],["company","公司名稱"],["taxId","統編"],["note","備註"]].forEach(([k,l])=>{if(o[k]&&o[k]!==(ex[k]||""))diffs.push({k,l,ov:ex[k]||"",nv:o[k]})})}
   else if(S.c.some(c=>c.name===o.name)){kind="nm";act="skip"}
-  P.push({n:i+2,o,kind,act,errs,diffs,exId:ex&&ex.id})});
- IM.plan=P;IM.warn=warn;IM.step=4;armed=null;draw()}
+  let pol=null,perrs=[],pact="skip";
+  if(pcols&&kind!=="fail"&&["pno","ptype","pstart","pend","pfee","plate"].some(k=>cell(g(k))!=="")){
+   const ty=cell(g("ptype"));pol={co:cell(g("pco")),no:cell(g("pno")),type:matchType(ty),start:normD(g("pstart"),1),end:normD(g("pend"),1),fee:cell(g("pfee")).replace(/[,\s]/g,"").replace(/\.0+$/,""),plate:cell(g("plate")).toUpperCase()};
+   if(!pol.type)perrs.push(ty?`險種「${ty}」不在險種清單，請先到設定新增`:"缺少險種");
+   if(g("pstart")!==""&&!pol.start)perrs.push("起保日期格式不正確");if(g("pend")!==""&&!pol.end)perrs.push("到期日期格式不正確");
+   if(pol.start&&pol.end&&pol.end<=pol.start)perrs.push("到期日期必須晚於起保日期");
+   if(pol.fee&&!/^\d+$/.test(pol.fee))perrs.push("保費需為整數");
+   if(pol.no&&(S.p.some(p=>p.no===pol.no)||seenP.has(pol.no)))perrs.push("保單號碼已存在");else if(pol.no)seenP.add(pol.no);
+   if(!perrs.length)pact="add"}
+  P.push({n:i+2,o,kind,act,errs,diffs,exId:ex&&ex.id,pol,perrs,pact,hn:cell(g("holderName"))})});
+ IM.plan=P;IM.warn=warn;IM.fixed=fixed;IM.step=4;armed=null;draw()}
+const V_ID=/^[A-Z][12]\d{8}$/;
 function xlCommit(){if(armed!=="xi"){armed="xi";draw();setTimeout(()=>{if(armed==="xi"){armed=null;draw()}},5000);return}
- const nc=S.c.map(c=>({...c}));let ad=0,up=0,sk=0,fl=0;
- IM.plan.forEach(p=>{if(p.kind==="fail"){fl++;return}if(p.act==="skip"){sk++;return}
-  if(p.act==="update"){const c=nc.find(x=>x.id===p.exId);if(c){p.diffs.forEach(d=>{c[d.k]=d.nv});up++}else fl++}
-  else if(p.act==="add"){nc.push({id:uid(),...p.o});ad++}});
- S.c=nc;S.b.push({id:uid(),at:nowS(),sheet:IM.sheet,ad,up,sk,fl});aud(`Excel 匯入：新增 ${ad}、更新 ${up}、跳過 ${sk}、失敗 ${fl}`);
- IM={step:5,rep:{ad,up,sk,fl,warn:IM.warn}};armed=null;draw()}
+ const nc=S.c.map(c=>({...c})),np=S.p.slice(),today=nowS().slice(0,10);let ad=0,up=0,sk=0,fl=0,pa=0,ps=0,hc=0;
+ IM.plan.forEach(p=>{let cust=null;
+  if(p.kind==="fail"){fl++;return}
+  if(p.act==="update"){const c=nc.find(x=>x.id===p.exId);if(c){p.diffs.forEach(d=>{c[d.k]=d.nv});up++;cust=c}else fl++}
+  else if(p.act==="add"){cust={id:uid(),...p.o};nc.push(cust);ad++}
+  else{sk++;if(p.exId)cust=nc.find(x=>x.id===p.exId)||null}
+  if(p.pol){if(p.pact==="add"&&cust){let h=cust;
+   if(p.hn&&p.hn!==cust.name){const ms=nc.filter(x=>x.name===p.hn);if(ms.length===1)h=ms[0];else if(!ms.length){h={id:uid(),name:p.hn};nc.push(h);hc++}}
+   np.push({id:uid(),cid:h.id,ins:[cust.id],type:p.pol.type,co:p.pol.co,no:p.pol.no,start:p.pol.start,end:p.pol.end,fee:p.pol.fee,status:!p.pol.end?"草稿":(p.pol.end<today?"已到期":"有效"),plate:p.pol.plate});pa++}else ps++}});
+ S.c=nc;S.p=np;S.b.push({id:uid(),at:nowS(),sheet:IM.sheet,ad,up,sk,fl,pa,ps});aud(`Excel 匯入：客戶新增 ${ad}、更新 ${up}、跳過 ${sk}、失敗 ${fl}；保單新增 ${pa}、跳過 ${ps}`);
+ IM={step:5,rep:{ad,up,sk,fl,pa,ps,hc,warn:IM.warn,fixed:IM.fixed}};armed=null;draw()}
 function imp(){const s=IM.step;
- if(s===1)return `<div class="mu">支援 .xlsx、.csv（UTF-8）。雛形目前匯入客戶的姓名、身分證字號、出生年月日、手機與備註；檔案只在這支手機上處理，不會上傳。</div><input type="file" accept=".xlsx,.xls,.csv" onchange="xlPick(this.files[0])" style="margin-top:8px">`;
+ if(s===1)return `<div class="mu">支援 .xlsx、.csv（UTF-8）。可同時匯入客戶與保單：同一列有客戶資料也有保單欄位時，會建立客戶並建立保單。檔案只在這支手機上處理，不會上傳。</div><input type="file" accept=".xlsx,.xls,.csv" onchange="xlPick(this.files[0])" style="margin-top:8px">`;
  if(s===2)return `<b>第二步：選擇工作表</b>${IM.sheets.map(n=>`<button style="display:block;width:100%;margin-top:8px;text-align:left" onclick="xlSheet(this.dataset.n)" data-n="${esc(n)}">${esc(n)}</button>`).join("")}<button style="margin-top:8px" onclick="IM={step:1};draw()">取消</button>`;
- if(s===3){const sx=IM.hdr.map(h=>SENS.test(h)),opts=k=>`<option value="-1">不匯入</option>`+IM.hdr.map((h,i)=>sx[i]?"":`<option value="${i}" ${IM.map[k]===i?"selected":""}>${esc(h)}</option>`).join("");
+ if(s===3){const sx=IM.hdr.map(h=>SENS.test(h)),opts=k=>`<option value="-1">不匯入</option>`+IM.hdr.map((h,i)=>sx[i]?"":`<option value="${i}" ${IM.map[k]===i?"selected":""}>${esc(h)}</option>`).join(""),grp=g=>FIELDS.filter(f=>f[2]===g).map(([k,l])=>`<label>${l}${k==="name"?"（必對應）":""}</label><select onchange="IM.map['${k}']=+this.value">${opts(k)}</select>`).join("");
   return `<b>第三步：預覽與欄位對應</b><div class="mu">工作表「${esc(IM.sheet)}」，共 ${IM.rows.length} 列</div>${sx.some(x=>x)?`<div class="note">已自動排除含卡號、安全碼或密碼的欄位，這些欄位不會被讀入。</div>`:""}
  <div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px"><tr>${IM.hdr.map(h=>`<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--bd)">${esc(h)}</th>`).join("")}</tr>${IM.rows.slice(0,5).map(r=>`<tr>${IM.hdr.map((h,i)=>`<td style="padding:4px 8px;border-bottom:1px solid var(--bd)">${sx[i]?"（已排除）":i===IM.map.idno?esc(mask(cell(r[i]).toUpperCase())):esc(cell(r[i]).slice(0,20))}</td>`).join("")}</tr>`).join("")}</table></div>
- ${FIELDS.map(([k,l])=>`<label>${l}${k==="name"?"（必對應）":""}</label><select onchange="IM.map['${k}']=+this.value">${opts(k)}</select>`).join("")}
+ <h2>客戶欄位</h2>${grp("c")}<h2>保單欄位</h2><div class="mu">有對應保單欄位時，會同時建立保單；要保人預設為此列客戶，被保險人也是此列客戶。</div>${grp("p")}
+ <label style="display:flex;gap:8px;align-items:center;color:var(--tx);margin-top:12px"><input type="checkbox" style="width:auto;min-height:0" ${IM.len?"checked":""} onchange="IM.len=this.checked">身分證或出生年月日格式不正確時，只把該欄位留空，其餘資料仍匯入</label>
  <div class="err" id="e"></div><div class="row" style="margin-top:8px"><button onclick="IM={step:1};draw()">取消</button><button class="pri" onclick="xlCheck()">檢查資料</button></div>`}
- if(s===4){const P=IM.plan,c=k=>P.filter(p=>p.kind===k).length,TG={add:"新增",upd:"身分證相同",nm:"同名待確認",fail:"失敗"};
-  return `<b>第四步：檢查結果</b><div class="mu">新增 ${c("add")}、身分證相同 ${c("upd")}、同名待確認 ${c("nm")}、失敗 ${c("fail")}${IM.warn?`、已移除疑似卡號內容 ${IM.warn} 處`:""}。不會默默覆寫，相同或同名的資料預設跳過，請自行選擇。失敗的列不會匯入，錯誤說明不含身分證字號。</div>
- ${P.slice(0,100).map((p,i)=>`<div class="card"><div class="row"><b>第 ${p.n} 列　${esc(p.o.name||"（無姓名）")}</b><span class="tag ${p.kind==="fail"?"d":p.kind==="add"?"":"w"}">${TG[p.kind]}</span></div>
- ${p.errs.length?`<div class="mu" style="color:var(--dn)">${esc(p.errs.join("；"))}</div>`:""}${p.kind==="upd"&&!p.diffs.length?`<div class="mu">資料與現有客戶完全相同</div>`:""}
+ if(s===4){const P=IM.plan,c=k=>P.filter(p=>p.kind===k).length,TG={add:"新增",upd:"身分證相同",nm:"同名待確認",fail:"失敗"},pc=P.filter(p=>p.pol).length,pe=P.filter(p=>p.pol&&p.perrs.length).length,stat={};
+  P.forEach(p=>[...p.errs,...p.perrs.map(x=>"保單："+x.replace(/「.*」/,""))].forEach(x=>{stat[x]=(stat[x]||0)+1}));
+  const idx=P.map((p,i)=>i).sort((a,b)=>(P[a].kind==="fail"?0:1)-(P[b].kind==="fail"?0:1));
+  return `<b>第四步：檢查結果</b><div class="mu">客戶：新增 ${c("add")}、身分證相同 ${c("upd")}、同名待確認 ${c("nm")}、失敗 ${c("fail")}。保單：${pc} 筆，其中 ${pe} 筆有問題。${IM.warn?`已移除疑似卡號內容 ${IM.warn} 處。`:""}${IM.fixed?`已將 ${IM.fixed} 處格式錯誤欄位留空。`:""}不會默默覆寫，相同或同名的資料預設跳過，請自行選擇。</div>
+ ${Object.keys(stat).length?`<div class="card"><b>問題統計</b>${Object.entries(stat).sort((a,b)=>b[1]-a[1]).map(([k,v2])=>`<div class="mu">${esc(k)}：${v2} 列</div>`).join("")}</div>`:""}
+ ${idx.slice(0,100).map(i=>{const p=P[i];return `<div class="card"><div class="row"><b>第 ${p.n} 列　${esc(p.o.name||"（無姓名）")}</b><span class="tag ${p.kind==="fail"?"d":p.kind==="add"?"":"w"}">${TG[p.kind]}</span></div>
+ ${p.errs.length?`<div class="mu" style="color:var(--dn)">${esc(p.errs.join("；"))}</div>`:""}${p.kind==="upd"&&!p.diffs.length?`<div class="mu">客戶資料與現有客戶完全相同</div>`:""}
  ${p.diffs.map(d=>`<div class="mu">${d.l}：${esc(d.ov||"（空）")} → ${esc(d.nv)}</div>`).join("")}
- ${p.kind!=="fail"?`<select onchange="IM.plan[${i}].act=this.value" style="margin-top:6px">${(p.kind==="upd"?[["skip","跳過"],["update","更新（覆寫上列欄位）"]]:p.kind==="nm"?[["skip","跳過"],["add","新增為新客戶"]]:[["add","新增"],["skip","跳過"]]).map(([x,l])=>`<option value="${x}" ${p.act===x?"selected":""}>${l}</option>`).join("")}</select>`:""}</div>`).join("")}
- ${P.length>100?`<div class="mu">僅顯示前 100 列，其餘列沿用預設動作。</div>`:""}
+ ${p.kind!=="fail"?`<select onchange="IM.plan[${i}].act=this.value" style="margin-top:6px">${(p.kind==="upd"?[["skip","客戶：跳過"],["update","客戶：更新（覆寫上列欄位）"]]:p.kind==="nm"?[["skip","客戶：跳過"],["add","客戶：新增為新客戶"]]:[["add","客戶：新增"],["skip","客戶：跳過"]]).map(([x,l])=>`<option value="${x}" ${p.act===x?"selected":""}>${l}</option>`).join("")}</select>`:""}
+ ${p.pol?`<div class="mu" style="margin-top:6px">保單：${esc(p.pol.type||"（險種未知）")} ${esc(p.pol.no)} ${fd(p.pol.start)} 至 ${fd(p.pol.end)}${p.hn&&p.hn!==p.o.name?"　要保人 "+esc(p.hn):""}</div>${p.perrs.length?`<div class="mu" style="color:var(--dn)">${esc(p.perrs.join("；"))}</div>`:`<select onchange="IM.plan[${i}].pact=this.value" style="margin-top:6px"><option value="add" ${p.pact==="add"?"selected":""}>保單：匯入</option><option value="skip" ${p.pact==="skip"?"selected":""}>保單：跳過</option></select>`}`:""}</div>`}).join("")}
+ ${P.length>100?`<div class="mu">僅顯示前 100 列（失敗列優先），其餘列沿用預設動作。</div>`:""}
  <div class="row" style="margin-top:8px"><button onclick="IM={step:1};armed=null;draw()">取消匯入</button><button class="pri" onclick="xlCommit()">${armed==="xi"?"再按一次確認匯入":"確認匯入"}</button></div>`}
- const r=IM.rep;return `<b>匯入完成</b><div class="mu">新增 ${r.ad}、更新 ${r.up}、跳過 ${r.sk}、失敗 ${r.fl}${r.warn?`；已移除疑似卡號內容 ${r.warn} 處`:""}</div><div class="mu">原始 Excel 內容已從記憶體清除，雛形不保存原始檔。</div><button class="pri" style="margin-top:8px" onclick="IM={step:1};draw()">完成</button>`}
+ const r=IM.rep;return `<b>匯入完成</b><div class="mu">客戶：新增 ${r.ad}、更新 ${r.up}、跳過 ${r.sk}、失敗 ${r.fl}</div><div class="mu">保單：新增 ${r.pa}、跳過 ${r.ps}${r.hc?`；因要保人不同而另外建立 ${r.hc} 位只有姓名的客戶`:""}</div>${r.warn?`<div class="mu">已移除疑似卡號內容 ${r.warn} 處</div>`:""}${r.fixed?`<div class="mu">已將 ${r.fixed} 處格式錯誤欄位留空</div>`:""}<div class="mu">原始 Excel 內容已從記憶體清除，雛形不保存原始檔。</div><button class="pri" style="margin-top:8px" onclick="IM={step:1};draw()">完成</button>`}
 function bak(){return `<h1>備份與匯入</h1><div class="note">雛形的資料只存在這支手機的瀏覽器。請定期下載備份，清除瀏覽器資料會讓資料消失。</div>
 <h2>備份與還原</h2><div class="card"><button class="pri" onclick="doBackup()">下載 JSON 備份</button><div class="mu" style="margin-top:8px">還原會覆蓋目前所有資料。</div><label>選擇備份檔</label><input type="file" accept=".json,application/json" onchange="pickRestore(this.files[0])">
 ${RS?`<div class="mu" style="margin-top:8px">備份時間 ${esc(RS.at||"未知")}：客戶 ${RS.d.c.length}、保單 ${RS.d.p.length}、家庭 ${RS.d.h.length}、聯絡 ${RS.d.l.length}、機會 ${RS.d.o.length}</div><button class="dg" style="margin-top:8px" onclick="doRestore()">${armed==="rs"?"再按一次確認覆蓋":"還原此備份"}</button>`:""}</div>
@@ -300,7 +358,7 @@ function opps(){const od=odO().length,r=S.o.slice().sort((a,b)=>(CLOSED.includes
 ${o.stage==="已成交"&&o.result?`<div class="mu">成交結果：${esc(o.result)}</div>`:""}${o.stage==="未成交"&&o.reason?`<div class="mu">未成交原因：${esc(o.reason)}</div>`:""}${o.note?`<div class="mu">${esc(o.note)}</div>`:""}
 <div style="margin-top:8px"><button class="sm" onclick="fo('${o.id}')">編輯</button> <button class="sm dg" onclick="del('o','${o.id}')">${armed==="o"+o.id?"再按一次刪除":"刪除"}</button></div></div>`}).join(""):`<div class="empty">還沒有業務機會</div>`)}
 function fo(id){if(!S.c.length)return toast("請先新增客戶");if(!TYPES.length)return toast("請先到設定新增險種");const o=S.o.find(x=>x.id===id)||{type:TYPES[0],stage:"新機會"};
- sheet(`<h1>${id?"編輯業務機會":"新增業務機會"}</h1><label>客戶（必填）</label><select id="oc">${S.c.map(c=>`<option value="${c.id}" ${c.id===o.cid?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+ sheet(`<h1>${id?"編輯業務機會":"新增業務機會"}</h1><label>客戶（必填）</label>${cpick("oc",o.cid)}
  <label>預計險種</label><select id="ot">${opt(TYPES.includes(o.type)?TYPES:[...TYPES,o.type],o.type)}</select>
  <label>預計到期日或成交日</label><input id="od" type="date" value="${esc(o.target)}">
  <label>預估保費（新臺幣）</label><input id="ofee" inputmode="numeric" value="${esc(o.fee)}">
@@ -331,7 +389,7 @@ function drawLogs(){const q=(document.getElementById("lq")||{}).value||"",el=doc
  const r=S.l.filter(l=>!q||cn(l.cid).includes(q)||(l.topic||"").includes(q)||(l.content||"").includes(q)).sort((a,b)=>b.at.localeCompare(a.at));
  el.innerHTML=r.length?r.map(l=>lcard(l,true)).join(""):`<div class="empty">${S.l.length?"找不到符合的紀錄":"還沒有聯絡紀錄"}</div>`}
 function fl(id,cid){if(!S.c.length)return toast("請先新增客戶");const l=S.l.find(x=>x.id===id)||{cid:cid||S.c[0].id,at:new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16),way:"電話"};
- sheet(`<h1>${id?"編輯聯絡紀錄":"新增聯絡紀錄"}</h1><label>客戶（必填）</label><select id="lc" onchange="lpo()">${S.c.map(c=>`<option value="${c.id}" ${c.id===l.cid?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+ sheet(`<h1>${id?"編輯聯絡紀錄":"新增聯絡紀錄"}</h1><label>客戶（必填）</label>${cpick("lc",l.cid,"lpo()")}
  <label>聯絡日期及時間</label><input id="la" type="datetime-local" value="${esc(l.at)}">
  <label>聯絡方式</label><select id="lw">${opt(WAYS,l.way)}</select>
  <label>聯絡主題（必填）</label><input id="lt" value="${esc(l.topic)}">
@@ -348,14 +406,16 @@ function sl(id){const o={cid:v("lc"),at:v("la"),way:v("lw"),topic:v("lt"),conten
  if(o.next&&o.next<o.at.slice(0,10))return e.textContent="下次聯絡日期不能早於本次聯絡日期";
  if(id)Object.assign(S.l.find(l=>l.id===id),o);else S.l.push({id:uid(),...o});save();closeS();toast("聯絡紀錄已儲存");draw()}
 function saveT(){try{localStorage.setItem("crm_proto_types",JSON.stringify(TYPES))}catch(e){toast("無法儲存到瀏覽器")}}
-function setts(){return `<h1>設定</h1><h2>險種管理</h2><div class="mu">可自由新增或刪除險種。已有保單使用的險種無法刪除。車牌欄位只在「車險」出現，建築地址只在「火險」出現。</div>
-<div class="card">${TYPES.length?TYPES.map((t,i)=>`<div class="row" style="padding:4px 0"><span>${esc(t)} <span class="mu">${S.p.filter(p=>p.type===t).length} 張</span></span><button class="sm dg" onclick="delT(${i})">${armed==="t"+i?"再按一次刪除":"刪除"}</button></div>`).join(""):`<div class="empty">目前沒有險種，請先新增</div>`}</div>
-<div class="row"><input id="nt2" placeholder="輸入新險種名稱" maxlength="20"><button class="pri" onclick="addT()" style="white-space:nowrap">新增險種</button></div><div class="err" id="e"></div>`}
+function setts(){const cb=(i,k,l)=>`<label style="display:flex;gap:8px;align-items:center;color:var(--tx);margin:4px 0"><input type="checkbox" style="width:auto;min-height:0" ${(TF[TYPES[i]]||{})[k]?"checked":""} onchange="tfSet(${i},'${k}',this.checked)">${l}</label>`;
+ return `<h1>設定</h1><h2>險種管理</h2><div class="mu">可自由新增或刪除險種，並勾選每個險種要顯示的欄位。已有保單使用的險種無法刪除。</div>
+<div class="card">${TYPES.length?TYPES.map((t,i)=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd)"><div class="row"><span><b>${esc(t)}</b> <span class="mu">${S.p.filter(p=>p.type===t).length} 張</span></span><button class="sm dg" onclick="delT(${i})">${armed==="t"+i?"再按一次刪除":"刪除"}</button></div>${cb(i,"plate","顯示車牌欄位")}${cb(i,"bld","顯示建物欄位（地址、坪數、年份、構造、樓層、等級、抵押銀行）")}</div>`).join(""):`<div class="empty">目前沒有險種，請先新增</div>`}</div>
+<div class="row" style="margin-top:8px"><input id="nt2" placeholder="輸入新險種名稱" maxlength="20"><button class="pri" onclick="addT()" style="white-space:nowrap">新增險種</button></div><div class="err" id="e"></div>`}
+function tfSet(i,k,on){const t=TYPES[i];TF[t]=TF[t]||{};TF[t][k]=on?1:0;saveTF()}
 function addT(){const n=v("nt2"),e=document.getElementById("e");if(!n)return e.textContent="請輸入險種名稱";if(TYPES.includes(n))return e.textContent="已有相同名稱的險種";TYPES.push(n);saveT();toast("險種已新增");draw()}
-function delT(i){const t=TYPES[i],k=S.p.filter(p=>p.type===t).length;if(k)return toast(`有 ${k} 張保單使用「${t}」，無法刪除`);if(armed==="t"+i){TYPES.splice(i,1);armed=null;saveT();toast("險種已刪除");draw()}else{armed="t"+i;draw();setTimeout(()=>{if(armed==="t"+i){armed=null;draw()}},4000)}}
+function delT(i){const t=TYPES[i],k=S.p.filter(p=>p.type===t).length;if(k)return toast(`有 ${k} 張保單使用「${t}」，無法刪除`);if(armed==="t"+i){delete TF[t];TYPES.splice(i,1);saveTF();armed=null;saveT();toast("險種已刪除");draw()}else{armed="t"+i;draw();setTimeout(()=>{if(armed==="t"+i){armed=null;draw()}},4000)}}
 const TABS=[["home","首頁"],["c","客戶"],["p","保單"],["r","提醒"],["m","更多"]];
 function draw(){document.getElementById("nav").innerHTML=TABS.map(([k,l])=>`<button class="${tab===k||(k==="m"&&"hloysb".includes(tab))?"on":""}" onclick="go('${k}')">${l}</button>`).join("");
- document.getElementById("app").innerHTML=({home,c:custs,h:fam,p:pols,r:rem,l:logs,o:opps,y:pays,b:bak,m:more,s:setts})[tab]();if(tab==="c")drawList();if(tab==="l")drawLogs()}
+ document.getElementById("app").innerHTML=({home,c:custs,h:fam,p:pols,r:rem,l:logs,o:opps,y:pays,b:bak,m:more,s:setts})[tab]();if(tab==="c")drawList();if(tab==="p")drawPols();if(tab==="l")drawLogs()}
 function go(k){tab=k;armed=null;draw();scrollTo(0,0)}
 draw();
 </script></body></html>
